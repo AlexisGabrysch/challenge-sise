@@ -204,25 +204,58 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
     # Get or create user
     user_id = get_or_create_user(name)
     
-    # Get CV content
-    header_content = get_or_create_content(user_id, "header", f"Welcome to {name}'s Page")
+    # Get CV content - basic info
+    header_content = get_or_create_content(user_id, "header", f"{name}")
     section1_content = get_or_create_content(
         user_id, 
         "section1", 
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        "Développeur web passionné avec plus de 5 ans d'expérience dans la création d'applications web modernes et réactives."
     )
     section2_content = get_or_create_content(
         user_id, 
         "section2", 
-        "Donec ullamcorper nulla non metus auctor fringilla."
+        "<div class=\"hobbies-list\">\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🏃</div>\n        <span>Course à pied</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">📚</div>\n        <span>Lecture</span>\n    </div>\n</div>"
     )
     
-    # Return CV data
+    # Get additional CV sections
+    experience = get_or_create_content(
+        user_id, 
+        "experience", 
+        '<div class="timeline-item">\n    <div class="date">Jan 2023 - Présent</div>\n    <h3 class="timeline-title">Développeur Full Stack</h3>\n    <div class="organization">Tech Solutions Inc.</div>\n    <p class="description">Développement et maintenance d\'applications web utilisant React, Node.js et MongoDB. Collaboration avec une équipe de 5 développeurs.</p>\n</div>\n<div class="timeline-item">\n    <div class="date">Mar 2021 - Déc 2022</div>\n    <h3 class="timeline-title">Développeur Front-End</h3>\n    <div class="organization">Digital Agency</div>\n    <p class="description">Conception et développement d\'interfaces utilisateur réactives et accessibles. Utilisation de HTML5, CSS3 et JavaScript.</p>\n</div>'
+    )
+    
+    education = get_or_create_content(
+        user_id, 
+        "education", 
+        '<div class="timeline-item">\n    <div class="date">2019 - 2022</div>\n    <h3 class="timeline-title">Master en Informatique</h3>\n    <div class="organization">Université de Paris</div>\n    <p class="description">Spécialisation en développement web et applications mobiles. Projet de fin d\'études sur l\'intelligence artificielle.</p>\n</div>\n<div class="timeline-item">\n    <div class="date">2016 - 2019</div>\n    <h3 class="timeline-title">Licence en Informatique</h3>\n    <div class="organization">Université de Lyon</div>\n    <p class="description">Formation aux fondamentaux de l\'informatique, algorithmique, bases de données et programmation.</p>\n</div>'
+    )
+    
+    skills = get_or_create_content(
+        user_id, 
+        "skills", 
+        '<div class="skill-tag">JavaScript</div>\n<div class="skill-tag">React.js</div>\n<div class="skill-tag">Node.js</div>\n<div class="skill-tag">HTML5</div>\n<div class="skill-tag">CSS3</div>\n<div class="skill-tag">MongoDB</div>\n<div class="skill-tag">Git</div>\n<div class="skill-tag">Docker</div>\n<div class="skill-tag">AWS</div>'
+    )
+    
+    title = get_or_create_content(user_id, "title", "Développeur Full Stack")
+    email = get_or_create_content(user_id, "email", f"{name}@example.com")
+    phone = get_or_create_content(user_id, "phone", "06 12 34 56 78")
+    location = get_or_create_content(user_id, "location", "Paris, France")
+    linkedin = get_or_create_content(user_id, "linkedin", "linkedin.com/in/"+name)
+    
+    # Return CV data with all sections
     return {
         "name": name,
         "header": header_content,
         "section1": section1_content,
-        "section2": section2_content
+        "section2": section2_content,
+        "experience": experience,
+        "education": education,
+        "skills": skills,
+        "title": title,
+        "email": email,
+        "phone": phone,
+        "location": location,
+        "linkedin": linkedin
     }
 
 @app.post("/api/cv/{name}/update")
@@ -232,7 +265,7 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
     
     # Extract session token from Authorization header
     session_token = None
-    if authorization and authorization.startswith("Bearer "):
+    if (authorization and authorization.startswith("Bearer ")):
         session_token = authorization[7:]  # Remove "Bearer " prefix
     
     # Check authorization - only page owner can update
@@ -419,26 +452,41 @@ async def user_page(request: Request, name: str):
         user_id = get_or_create_user(name)
         
         # Get or create default content for sections
-        header_content = get_or_create_content(user_id, "header", f"Welcome to {name}'s Page")
+        header_content = get_or_create_content(user_id, "header", f"{name}")
         
         section1_content = get_or_create_content(
             user_id, 
             "section1", 
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eget efficitur magna. Suspendisse potenti."
+            "Développeur web passionné avec plus de 5 ans d'expérience dans la création d'applications web modernes et réactives. Je suis spécialisé dans le développement full stack avec une expertise particulière en JavaScript et ses frameworks. J'aime résoudre des problèmes complexes et apprendre continuellement de nouvelles technologies."
         )
         
         section2_content = get_or_create_content(
             user_id, 
             "section2", 
-            "Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper."
+            "<div class=\"hobbies-list\">\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🏃</div>\n        <span>Course à pied</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">📚</div>\n        <span>Lecture</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">✈️</div>\n        <span>Voyages</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🎮</div>\n        <span>Jeux vidéo</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🎸</div>\n        <span>Guitare</span>\n    </div>\n</div>"
         )
+        
+        # Get additional CV sections
+        experience = get_or_create_content(user_id, "experience", None)
+        education = get_or_create_content(user_id, "education", None)
+        skills = get_or_create_content(user_id, "skills", None)
+        title = get_or_create_content(user_id, "title", "Développeur Full Stack")
+        email = get_or_create_content(user_id, "email", f"{name}@example.com")
+        phone = get_or_create_content(user_id, "phone", "06 12 34 56 78")
+        location = get_or_create_content(user_id, "location", "Paris, France")
+        linkedin = get_or_create_content(user_id, "linkedin", f"linkedin.com/in/{name}")
         
         # Check if current user is the owner of the page
         session_token = request.cookies.get("session_token")
         is_owner = False
+        current_user = None
+        current_user_name = ""
         
         if session_token:
-            is_owner = is_page_owner(DB_CONFIG, session_token, name)
+            current_user = get_user_from_session(DB_CONFIG, session_token)
+            if current_user:
+                current_user_name = current_user["name"]
+                is_owner = current_user["name"] == name
         
         return templates.TemplateResponse(
             "user_template.html", 
@@ -446,11 +494,21 @@ async def user_page(request: Request, name: str):
                 "request": request, 
                 "name": name, 
                 "header": header_content,
+                "title": title,
+                "email": email,
+                "phone": phone,
+                "location": location,
+                "linkedin": linkedin,
                 "section1": section1_content, 
                 "section2": section2_content,
-                "client_url": CLIENT_URL,  # Utilisez CLIENT_URL au lieu de SERVER_URL ici
+                "experience": experience,
+                "education": education,
+                "skills": skills,
+                "SERVER_URL": SERVER_URL,
+                "client_url": CLIENT_URL,
                 "is_owner": is_owner,
-                "logged_in": session_token is not None
+                "logged_in": session_token is not None,
+                "current_user_name": current_user_name
             }
         )
     except Exception as e:
