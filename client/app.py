@@ -76,11 +76,6 @@ def register(name: str, email: str, password: str) -> bool:
                 "email": data["email"]
             }
             st.session_state.session_token = data["session_token"]
-            # Ajouter cette ligne pour rediriger vers le CV après inscription
-            st.markdown(f"""
-            <meta http-equiv="refresh" content="1; url={SERVER_URL}/user/{data['name']}">
-            <p>Registration successful! Redirecting to your CV...</p>
-            """, unsafe_allow_html=True)
             return True
         else:
             st.error(f"Registration failed: {response.json().get('detail', 'Unknown error')}")
