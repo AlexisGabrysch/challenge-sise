@@ -1,0 +1,6 @@
+streamlit
+fastapi
+uvicorn
+jinja2
+aiosqlite
+python-multipart
