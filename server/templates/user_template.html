@@ -596,8 +596,8 @@
                     <a href="{{ SERVER_URL }}/logout" class="action-btn secondary-btn">Déconnexion</a>
                 {% endif %}
             {% else %}
-                <a href="{{ SERVER_URL }}/login" class="action-btn">Connexion</a>
-                <a href="{{ SERVER_URL }}/register" class="action-btn secondary-btn">Créer un compte</a>
+                <a href="{{ CLIENT_URL }}" class="action-btn">Connexion</a>
+                <a href="{{ CLIENT_URL }}" class="action-btn secondary-btn">Créer un compte</a>
             {% endif %}
         </div>
 
@@ -606,7 +606,7 @@
             {% if is_owner %}
             <p>Vous êtes connecté en tant que {{ name }}. Vous pouvez éditer ce CV.</p>
             {% else %}
-            <p>Vous consultez le CV de {{ name }}. <a href="{{ SERVER_URL }}/login">Connectez-vous</a> pour modifier votre propre CV.</p>
+            <p>Vous consultez le CV de {{ name }}. <a href="{{ CLIENT_URL }}">Connectez-vous</a> pour modifier votre propre CV.</p>
             {% endif %}
         </div>
     </div>
