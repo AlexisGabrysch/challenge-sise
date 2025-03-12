@@ -21,6 +21,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Database path
 DB_PATH = 'data/users.db'
 
+# Streamlit URL - update with your deployed URL
+STREAMLIT_URL = os.getenv("STREAMLIT_URL", "https://challenge-sise-fhnm3twfkndvfhhybh8f7w.streamlit.app")
+
 # Helper to get or create user
 async def get_or_create_user(name: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -67,15 +70,12 @@ async def get_or_create_content(user_id: int, section_name: str, default_content
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    # Get the streamlit URL from environment or use default
-    streamlit_url = os.getenv("STREAMLIT_URL", "http://localhost:8501")
-    
     # Redirect to Streamlit app
     html_content = f"""
     <html>
         <head>
             <title>Redirecting...</title>
-            <meta http-equiv="refresh" content="0;url={streamlit_url}" />
+            <meta http-equiv="refresh" content="0;url={STREAMLIT_URL}" />
         </head>
         <body>
             <p>Redirecting to the Streamlit app...</p>
@@ -111,7 +111,8 @@ async def user_page(request: Request, name: str):
             "name": name, 
             "header": header_content,
             "section1": section1_content, 
-            "section2": section2_content
+            "section2": section2_content,
+            "streamlit_url": STREAMLIT_URL  # Pass Streamlit URL to template
         }
     )
 

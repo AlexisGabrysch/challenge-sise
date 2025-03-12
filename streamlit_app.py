@@ -8,6 +8,8 @@ import time
 
 # Set flag that we're running in cloud
 os.environ["STREAMLIT_CLOUD"] = "true"
+# Set the streamlit URL for the application to use
+os.environ["STREAMLIT_URL"] = "https://challenge-sise-fhnm3twfkndvfhhybh8f7w.streamlit.app"
 
 def run_fastapi():
     print("Starting FastAPI server...")

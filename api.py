@@ -21,6 +21,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Database path
 DB_PATH = 'data/users.db'
 
+# Streamlit URL - update with your deployed URL
+STREAMLIT_URL = os.getenv("STREAMLIT_URL", "https://challenge-sise-fhnm3twfkndvfhhybh8f7w.streamlit.app")
+
 # Helper to get or create user
 async def get_or_create_user(name: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -68,11 +71,11 @@ async def get_or_create_content(user_id: int, section_name: str, default_content
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     # Redirect to Streamlit app
-    html_content = """
+    html_content = f"""
     <html>
         <head>
             <title>Redirecting...</title>
-            <meta http-equiv="refresh" content="0;url=http://localhost:8501" />
+            <meta http-equiv="refresh" content="0;url={STREAMLIT_URL}" />
         </head>
         <body>
             <p>Redirecting to the Streamlit app...</p>
@@ -108,7 +111,8 @@ async def user_page(request: Request, name: str):
             "name": name, 
             "header": header_content,
             "section1": section1_content, 
-            "section2": section2_content
+            "section2": section2_content,
+            "streamlit_url": STREAMLIT_URL  # Pass Streamlit URL to template
         }
     )
 
@@ -146,7 +150,7 @@ async def update_content(
             # Check if any rows were updated - proper awaiting of coroutines
             async with db.execute("SELECT changes()") as cursor:
                 changes_row = await cursor.fetchone()
-                # Access by column name or first column since it's a dictionary
+                # Access by column name since it's a dictionary
                 changes = changes_row["changes()"] if changes_row else 0
             
             if changes == 0:
@@ -162,4 +166,8 @@ async def update_content(
     return RedirectResponse(url=f"/users/{name}", status_code=303)
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    # Get port from environment variable or use default
+    port = int(os.getenv("PORT", 8000))
+    # Use 0.0.0.0 to listen on all interfaces in cloud environments
+    host = os.getenv("HOST", "0.0.0.0")
+    uvicorn.run("api:app", host=host, port=port, log_level="info")

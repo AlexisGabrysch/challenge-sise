@@ -12,9 +12,12 @@ def get_api_url():
         # Local development
         return "http://localhost:8000"
 
+# Get the Streamlit URL from environment or use deployed URL
+def get_streamlit_url():
+    return os.getenv("STREAMLIT_URL", "https://challenge-sise-fhnm3twfkndvfhhybh8f7w.streamlit.app")
+
 def main():
     # Check if we are on a user page
-    # Using the non-experimental version of get_query_params
     query_params = st.query_params
     if "name" in query_params:
         user_name = query_params["name"]
@@ -60,15 +63,14 @@ def show_user_page(user_name):
     if st.button("Return to Main Page"):
         redirect_js = f"""
             <script>
-            window.location.href = "{get_base_url()}";
+            window.location.href = "{get_streamlit_url()}";
             </script>
         """
         html(redirect_js)
 
 def get_base_url():
-    # In a local development environment, this will be the localhost base URL
     # In Streamlit Cloud, it will be the deployed URL
-    return os.getenv("STREAMLIT_SERVER_BASE_URL_PATH", "http://localhost:8501")
+    return get_streamlit_url()
 
 if __name__ == "__main__":
     main()
