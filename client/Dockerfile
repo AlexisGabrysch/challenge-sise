@@ -10,8 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
 # Variable d'environnement pour Railway
-ENV SERVER_URL=https://challenge-sise-production.up.railway.app
-ENV CLIENT_URL=https://challenge-sise-client.up.railway.app
+ENV SERVER_URL=challenge-sise.railway.internal
+ENV CLIENT_URL=beneficial-liberation.railway.internal
+
 
 # Exposer le port Streamlit
 EXPOSE 8501

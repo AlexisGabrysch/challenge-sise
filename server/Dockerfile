@@ -12,8 +12,8 @@ COPY templates/ templates/
 RUN mkdir -p static
 
 # Variables d'environnement pour Railway
-ENV CLIENT_URL=https://challenge-sise-client.up.railway.app
-ENV SERVER_URL=https://challenge-sise-production.up.railway.app
+ENV SERVER_URL=challenge-sise.railway.internal
+ENV CLIENT_URL=beneficial-liberation.railway.internal
 ENV PORT=8000
 ENV HOST=0.0.0.0
 
