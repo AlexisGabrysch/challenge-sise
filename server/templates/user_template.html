@@ -573,7 +573,7 @@
             <div class="section">
                 <button class="edit-btn" onclick="toggleEdit('section2')">Modifier</button>
                 <h2 class="section-title">Loisirs</h2>
-                <div id="section2-content">{{ section2 }}</div>
+                <div id="section2-content">{{ section2|safe }}</div>
                 <div class="edit-form" id="section2-form">
                     <form action="./{{ name }}/update" method="post">
                         <input type="hidden" name="section" value="section2">
