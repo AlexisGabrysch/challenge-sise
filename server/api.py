@@ -100,7 +100,7 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
         
         # Check if content exists
         cursor.execute(
-            "SELECT id, content FROM user_content WHERE user_id = %s AND section_name = %s",
+            "SELECT id, content FROM users_content WHERE user_id = %s AND section_name = %s",
             (user_id, section_name)
         )
         content = cursor.fetchone()
@@ -110,7 +110,7 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
         
         # Create default content
         cursor.execute(
-            "INSERT INTO user_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+            "INSERT INTO users_content (user_id, section_name, content) VALUES (%s, %s, %s)",
             (user_id, section_name, default_content)
         )
         conn.commit()
@@ -237,7 +237,7 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
         # Try to update existing content
         cursor.execute(
             """
-            UPDATE user_content 
+            UPDATE users_content 
             SET content = %s, last_updated = CURRENT_TIMESTAMP 
             WHERE user_id = %s AND section_name = %s
             """,
@@ -248,7 +248,7 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
         if cursor.rowcount == 0:
             # If no rows were updated, insert new content
             cursor.execute(
-                "INSERT INTO user_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+                "INSERT INTO users_content (user_id, section_name, content) VALUES (%s, %s, %s)",
                 (user_id, update_data.section, update_data.content)
             )
         
@@ -477,7 +477,7 @@ async def update_content(
         # Try to update existing content
         cursor.execute(
             """
-            UPDATE user_content 
+            UPDATE users_content 
             SET content = %s, last_updated = CURRENT_TIMESTAMP 
             WHERE user_id = %s AND section_name = %s
             """,
@@ -488,7 +488,7 @@ async def update_content(
         if cursor.rowcount == 0:
             # If no rows were updated, insert new content
             cursor.execute(
-                "INSERT INTO user_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+                "INSERT INTO users_content (user_id, section_name, content) VALUES (%s, %s, %s)",
                 (user_id, section, content)
             )
         

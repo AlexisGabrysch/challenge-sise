@@ -45,7 +45,7 @@ def setup_database():
             
             # Create user_content table
             execute_query(conn, '''
-            CREATE TABLE IF NOT EXISTS user_content (
+            CREATE TABLE IF NOT EXISTS users_content (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT,
                 section_name VARCHAR(255) NOT NULL,

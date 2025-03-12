@@ -31,7 +31,7 @@ if "session_token" not in st.session_state:
 def set_page(page: str):
     """Change la page actuelle"""
     st.session_state.page = page
-    st.experimental_rerun()
+    st.rerun()
 
 def login(email: str, password: str) -> bool:
     """Authentifie l'utilisateur avec le serveur API"""
@@ -125,14 +125,14 @@ def show_login_page():
         if submit:
             if login(email, password):
                 st.session_state.page = PAGE_USER_PROFILE
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid email or password")
     
     st.write("Don't have an account?")
     if st.button("Register", key="register_btn_login"):
         st.session_state.page = PAGE_REGISTER
-        st.experimental_rerun()
+        st.rerun()
 
 def show_register_page():
     st.title("Register")
@@ -152,17 +152,17 @@ def show_register_page():
             else:
                 if register(name, email, password):
                     st.session_state.page = PAGE_USER_PROFILE
-                    st.experimental_rerun()
+                    st.rerun()
     
     st.write("Already have an account?")
     if st.button("Login", key="login_btn_register"):
         st.session_state.page = PAGE_LOGIN
-        st.experimental_rerun()
+        st.rerun()
 
 def show_user_profile():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
-        st.experimental_rerun()
+        st.rerun()
         
     st.title(f"Welcome, {st.session_state.user['name']}!")
     
@@ -171,21 +171,21 @@ def show_user_profile():
     with col1:
         if st.button("View My CV", key="view_cv_btn_profile"):
             st.session_state.page = PAGE_VIEW_CV
-            st.experimental_rerun()
+            st.rerun()
     
     with col2:
         if st.button("Edit My CV", key="edit_cv_btn_profile"):
             st.session_state.page = PAGE_EDIT_CV
-            st.experimental_rerun()
+            st.rerun()
     
     if st.button("Logout", key="logout_btn_profile"):
         logout()
-        st.experimental_rerun()
+        st.rerun()
 
 def show_view_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
-        st.experimental_rerun()
+        st.rerun()
     
     username = st.session_state.user["name"]
     st.title(f"{username}'s CV")
@@ -208,17 +208,17 @@ def show_view_cv():
     with col1:
         if st.button("Back to Profile", key="back_to_profile_btn_view"):
             st.session_state.page = PAGE_USER_PROFILE
-            st.experimental_rerun()
+            st.rerun()
     
     with col2:
         if st.button("Edit CV", key="edit_cv_btn_view"):
             st.session_state.page = PAGE_EDIT_CV
-            st.experimental_rerun()
+            st.rerun()
 
 def show_edit_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
-        st.experimental_rerun()
+        st.rerun()
     
     username = st.session_state.user["name"]
     st.title(f"Edit {username}'s CV")
@@ -229,7 +229,7 @@ def show_edit_cv():
         st.warning("CV data could not be loaded")
         if st.button("Back to Profile", key="back_to_profile_btn_edit_error"):
             st.session_state.page = PAGE_USER_PROFILE
-            st.experimental_rerun()
+            st.rerun()
         return
     
     with st.form("edit_header_form"):
@@ -270,12 +270,12 @@ def show_edit_cv():
     with col1:
         if st.button("Back to Profile", key="back_to_profile_btn_edit"):
             st.session_state.page = PAGE_USER_PROFILE
-            st.experimental_rerun()
+            st.rerun()
     
     with col2:
         if st.button("View CV", key="view_cv_btn_edit"):
             st.session_state.page = PAGE_VIEW_CV
-            st.experimental_rerun()
+            st.rerun()
 
 def main():
     # Sidebar avec le nom de l'app
@@ -285,7 +285,7 @@ def main():
         st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
         if st.sidebar.button("Logout", key="logout_btn_sidebar"):
             logout()
-            st.experimental_rerun()
+            st.rerun()
     
     # Afficher la page actuelle
     if st.session_state.page == PAGE_LOGIN:
