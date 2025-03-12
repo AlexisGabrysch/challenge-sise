@@ -112,6 +112,12 @@ async def root(request: Request):
     """
     return HTMLResponse(content=html_content)
 
+# Ajoutez cette route pour gérer également les requêtes sur /users/{name}
+@app.get("/users/{name}", response_class=HTMLResponse)
+async def legacy_user_page(request: Request, name: str):
+    # Rediriger vers le nouveau chemin /user/{name}
+    return RedirectResponse(url=f"/user/{name}")
+
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str):
     # Get or create user
@@ -143,6 +149,18 @@ async def user_page(request: Request, name: str):
             "client_url": CLIENT_URL  # Pass Client URL to template
         }
     )
+
+# Ajoutez cette route pour gérer les requêtes sur l'ancien chemin
+@app.post("/users/{name}/update", response_class=RedirectResponse)
+async def legacy_update_content(
+    request: Request,
+    name: str,
+    section: str = Form(...),
+    content: str = Form(...)
+):
+    # Redirigez vers la nouvelle route pour la compatibilité
+    result = await update_content(request, name, section, content)
+    return result
 
 @app.post("/user/{name}/update", response_class=RedirectResponse)
 async def update_content(
@@ -187,7 +205,7 @@ async def update_content(
         
         conn.commit()
         
-        # Redirect back to user page - changed from /users/ to /user/
+        # Redirect back to user page - changed to /user/ from /users/
         return RedirectResponse(url=f"/user/{name}", status_code=303)
     finally:
         cursor.close()
