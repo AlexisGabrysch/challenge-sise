@@ -10,7 +10,7 @@ def get_api_url():
         return "http://localhost:8888"
     else:
         # Local development
-        return "http://localhost:8000"
+        return "challenge-sise.railway.internal"
 
 # Get the Streamlit URL from environment or use deployed URL
 def get_streamlit_url():
