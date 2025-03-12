@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 
-def connect_to_mysql(host, user, password, database=None):
+def connect_to_mysql(host, user, password, database=None, port=3306):
     """
     Établit une connexion à une base de données MySQL distante
     
@@ -10,6 +10,7 @@ def connect_to_mysql(host, user, password, database=None):
         user (str): Nom d'utilisateur
         password (str): Mot de passe
         database (str, optional): Nom de la base de données
+        port (int, optional): Port de connexion MySQL
         
     Returns:
         connection: L'objet connexion si réussi, None sinon
@@ -20,7 +21,8 @@ def connect_to_mysql(host, user, password, database=None):
             host=host,
             user=user,
             password=password,
-            database=database
+            database=database,
+            port=port
         )
         print(f"Connexion à MySQL réussie - Version de MySQL: {connection.get_server_info()}")
         
@@ -67,12 +69,15 @@ def close_connection(connection):
 
 # Exemple d'utilisation
 if __name__ == "__main__":
-    # Remplacez par vos informations de connexion
+    # URL de connexion: mysql://root:EeXtIBwNKhAyySgijzeanMRgNAQifsmZ@maglev.proxy.rlwy.net:40146
+    
+    # Extraction correcte des informations de l'URL
     config = {
-        'host': 'adresse_serveur',
-        'user': 'nom_utilisateur',
-        'password': 'mot_de_passe',
-        'database': 'nom_base_de_donnees'
+        'host': 'maglev.proxy.rlwy.net',  # Seulement le nom d'hôte
+        'user': 'root',
+        'password': 'EeXtIBwNKhAyySgijzeanMRgNAQifsmZ',
+        'database': 'railway',
+        'port': 40146  # Le port doit être un entier
     }
     
     # Établir la connexion
@@ -80,7 +85,7 @@ if __name__ == "__main__":
     
     if conn:
         # Exemple de requête SELECT
-        results = execute_query(conn, "SELECT * FROM votre_table LIMIT 5")
+        results = execute_query(conn, "SELECT * FROM tuser LIMIT 5")
         if results:
             print("Résultats:")
             for row in results:

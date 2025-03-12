@@ -2,5 +2,5 @@ streamlit
 fastapi
 uvicorn
 jinja2
-aiosqlite
+mysql-connector-python
 python-multipart
