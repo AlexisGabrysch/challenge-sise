@@ -130,7 +130,7 @@ def show_login_page():
                 st.error("Invalid email or password")
     
     st.write("Don't have an account?")
-    if st.button("Register"):
+    if st.button("Register", key="register_btn_login"):
         st.session_state.page = PAGE_REGISTER
         st.experimental_rerun()
 
@@ -155,7 +155,7 @@ def show_register_page():
                     st.experimental_rerun()
     
     st.write("Already have an account?")
-    if st.button("Login"):
+    if st.button("Login", key="login_btn_register"):
         st.session_state.page = PAGE_LOGIN
         st.experimental_rerun()
 
@@ -169,16 +169,16 @@ def show_user_profile():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("View My CV"):
+        if st.button("View My CV", key="view_cv_btn_profile"):
             st.session_state.page = PAGE_VIEW_CV
             st.experimental_rerun()
     
     with col2:
-        if st.button("Edit My CV"):
+        if st.button("Edit My CV", key="edit_cv_btn_profile"):
             st.session_state.page = PAGE_EDIT_CV
             st.experimental_rerun()
     
-    if st.button("Logout"):
+    if st.button("Logout", key="logout_btn_profile"):
         logout()
         st.experimental_rerun()
 
@@ -206,12 +206,12 @@ def show_view_cv():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("Back to Profile"):
+        if st.button("Back to Profile", key="back_to_profile_btn_view"):
             st.session_state.page = PAGE_USER_PROFILE
             st.experimental_rerun()
     
     with col2:
-        if st.button("Edit CV"):
+        if st.button("Edit CV", key="edit_cv_btn_view"):
             st.session_state.page = PAGE_EDIT_CV
             st.experimental_rerun()
 
@@ -227,7 +227,7 @@ def show_edit_cv():
     
     if not cv_data:
         st.warning("CV data could not be loaded")
-        if st.button("Back to Profile"):
+        if st.button("Back to Profile", key="back_to_profile_btn_edit_error"):
             st.session_state.page = PAGE_USER_PROFILE
             st.experimental_rerun()
         return
@@ -268,12 +268,12 @@ def show_edit_cv():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("Back to Profile"):
+        if st.button("Back to Profile", key="back_to_profile_btn_edit"):
             st.session_state.page = PAGE_USER_PROFILE
             st.experimental_rerun()
     
     with col2:
-        if st.button("View CV"):
+        if st.button("View CV", key="view_cv_btn_edit"):
             st.session_state.page = PAGE_VIEW_CV
             st.experimental_rerun()
 
@@ -283,7 +283,7 @@ def main():
     
     if st.session_state.user:
         st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
-        if st.sidebar.button("Logout"):
+        if st.sidebar.button("Logout", key="logout_btn_sidebar"):
             logout()
             st.experimental_rerun()
     
