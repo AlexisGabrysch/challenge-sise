@@ -1,109 +1,50 @@
 {
-    "name": "AKREM JOMAA",
+    "first_name": "AKREM",
+    "last_name": "JOMAA",
     "email": "akremjomaa@univ-lyon2.fr",
     "phone": "33750712515",
     "address": "Lyon, FRANCE",
-    "driver_license": "Permis de conduire B",
-    "education": {
-        "Master SISE": {
-            "institution": "Institut de la Communication, Université de Lumière Lyon 2",
-            "location": "Lyon, France",
-            "years": "2023-2025",
-            "modules": [
-                "Analyse Statistique",
-                "Biostatistique",
-                "Machine Learning (ML)",
-                "Deep Learning",
-                "Natural Language Processing (NLP)",
-                "LLM",
-                "Data Mining",
-                "Computer Vision",
-                "MLOps",
-                "Systèmes d'informations décisionnels",
-                "Data Warehousing",
-                "Dataviz",
-                "Cloud",
-                "Big Data",
-                "Base de données SQL",
-                "Base de données NoSQL",
-                "Conception agile de projets informatiques",
-                "séries temporelles"
-            ]
+    "driving_license": "B",
+    "education": [
+        {
+            "year": 2023,
+            "school": "Institut de la Communication, Université de Lumière Lyon 2",
+            "degree": "Master Statistique et Informatique pour la Science des données (SISE)",
+            "details": "Modules pertinents: Analyse Statistique, Biostatistique, Machine Learning (ML), Deep Learning, Natural Language Processing (NLP), LLM, Data Mining, Computer Vision, MLOps, Systèmes d'informations décisionnels, Data Warehousing, Dataviz, Cloud, Big Data, Base de données SQL, Base de données NoSQL, Conception agile de projets informatiques, séries temporelles."
         },
-        "Licence CIASIE": {
-            "institution": "Institut Universitaire de Technologie NANCY-CHARLEMAGNE",
-            "location": "Nancy, France",
-            "years": "2022-2023",
-            "modules": [
-                "Développement d'applications client web",
-                "Développement services web",
-                "Conception pour le web",
-                "Technologies du web pour la mobilité",
-                "Administration et sécurité des serveurs/services web",
-                "Administration et outils systèmes pour la virtualisation"
-            ]
+        {
+            "year": 2022,
+            "school": "Institut Universitaire de Technologie NANCY-CHARLEMAGNE",
+            "degree": "Licence Professionnelle Conception-Intégration d'Applications et Services Web pour l'Entreprise (CIASIE)",
+            "details": "Modules pertinents : Développement d'applications client web, Développement services web, Conception pour le web, Technologies du web pour la mobilité, Administration et sécurité des serveurs/services web, Administration et outils systèmes pour la virtualisation."
         },
-        "Licence Ingéniérie des Systèmes de l'Informatique": {
-            "institution": "Institut Supérieur des Sciences Appliquées et de Technologie de Sousse",
-            "location": "Sousse, Tunisie",
-            "years": "2019-2022",
-            "modules": [
-                "Méthodologie génie logiciel",
-                "Base des Données Avancées",
-                "IA et Machine learning",
-                "Big Data",
-                "Sécurité",
-                "Probabilité et statistique"
-            ]
+        {
+            "year": 2019,
+            "school": "Institut Supérieur des Sciences Appliquées et de Technologie de Sousse",
+            "degree": "Licence en Ingéniérie des Systèmes de l'Informatique",
+            "details": "Modules pertinents: Méthodologie génie logiciel, Base des Données Avancées, IA et Machine learning, Big Data, Sécurité, Probabilité et statistique."
         }
-    },
-    "experience": {
-        "Développeur web back-end Beegift": {
+    ],
+    "work_experience": [
+        {
+            "job_title": "Développeur web back-end",
             "company": "Beegift",
-            "location": "Commercy, France",
             "duration": "Avril 2023 - juillet 2023",
-            "responsibilities": [
-                "Mise en oeuvre d'un microservice pour la gestion des E-mails.",
-                "Mise en oeuvre d'un microservice pour la gestion des chèques cadeaux."
-            ],
-            "tools": [
-                "Laravel 10",
-                "Brevo",
-                "Amazon S3",
-                "Docker",
-                "Github",
-                "Trello",
-                "Postman"
-            ]
+            "description": "Mise en oeuvre d'un microservice pour la gestion des E-mails. Mise en oeuvre d'un microservice pour la gestion des chèques cadeaux. Outils utilisés : Laravel 10, Brevo, Amazon S3, Docker, Github, Trello, Postman."
         },
-        "Data Scientist": {
+        {
+            "job_title": "Data Scientist",
             "company": "Laboratoire Jean Kuntzmann (LJK)",
-            "location": "Grenoble, France",
             "duration": "Mai - juillet 2024",
-            "responsibilities": [
-                "Collecte de pétitions en ligne au Royaume-Uni à partir de Change.org en utilisant des techniques de web scraping et de web crawling.",
-                "Prétraitement et analyse statistique des pétitions collectées.",
-                "Mise en œuvre d'un modèle de machine learning pour prédire les thématiques à partir des descriptions des pétitions."
-            ],
-            "tools": [
-                "Python",
-                "pandas",
-                "scikit-learn",
-                "NLTK",
-                "Selenium",
-                "R",
-                "dplyr",
-                "ggplot2",
-                "tidyr",
-                "Trello",
-                "Github"
-            ]
+            "description": "Collecte de pétitions en ligne au Royaume-Uni à partir de Change.org en utilisant des techniques de web scraping et de web crawling. Prétraitement et analyse statistique des pétitions collectées. Mise en œuvre d'un modèle de machine learning pour prédire les thématiques à partir des descriptions des pétitions. Outils utilisés : Python, pandas, scikit-learn, NLTK, Selenium, R, dplyr, ggplot2, tidyr, Trello, Github."
         }
-    },
-    "projects": {
-        "GreenTech Solutions": {
-            "description": "Analyse et prédiction de la performance énergétique des bâtiments",
-            "tools": [
+    ],
+    "projects": [
+        {
+            "title": "GreenTech Solutions - Analyse et prédiction de la performance énergétique des bâtiments",
+            "type": "Academic",
+            "description": "Développement d'une application interactive avec Dash pour analyser les Diagnostics de Performance Énergétique (DPE) des bâtiments du Rhône (69). Conception de modèles de classification et de régression pour prédire les étiquettes DPE et la consommation énergétique.",
+            "technologies_used": [
                 "Python",
                 "Scikit-learn",
                 "Plotly",
@@ -113,9 +54,11 @@
                 "GitHub"
             ]
         },
-        "L'Observatoire des Saveurs Lyonnaises": {
-            "description": "Analyse des restaurants lyonnais",
-            "tools": [
+        {
+            "title": "L'Observatoire des Saveurs Lyonnaises - Analyse des restaurants lyonnais",
+            "type": "Academic",
+            "description": "Développement d'une application interactive avec Streamlit pour analyser les données des restaurants lyonnais extraites de TripAdvisor via des techniques de web scraping. Réalisation d'analyses NLP pour explorer les sentiments des avis clients et génération de résumés automatiques grâce à un modèle de langage (LLM).",
+            "technologies_used": [
                 "Python",
                 "BeautifulSoup",
                 "Streamlit",
@@ -125,6 +68,10 @@
                 "GitHub"
             ]
         }
+    ],
+    "languages": {
+        "Français": "Compétence professionnelle",
+        "Anglais": "Compétence professionnelle"
     },
     "skills": [
         "Python",
@@ -155,20 +102,7 @@
         "Laravel"
     ],
     "certifications": [
-        {
-            "name": "Oracle Cloud Infrastructure 2023 Al Certified Foundations Associate",
-            "topics": [
-                "Oracle AI services",
-                "Oracle ML services",
-                "AI fundamental concepts",
-                "Machine Learning and Deep Learning concepts and terminologies",
-                "Oracle Generative AI"
-            ]
-        },
+        "Oracle Cloud Infrastructure 2023 Al Certified Foundations Associate: Oracle AI services, Oracle ML services, AI fundamental concepts, Machine Learning and Deep Learning concepts and terminologies, Oracle Generative AI",
         "Certification Pix"
-    ],
-    "languages": {
-        "French": "Compétence professionnelle",
-        "English": "Compétence professionnelle"
-    }
+    ]
 }

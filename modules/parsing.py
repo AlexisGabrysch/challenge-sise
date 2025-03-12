@@ -36,7 +36,9 @@ for attempt in range(max_retries):
             messages=[
                 {
                     "role": "user",
-                    "content": "This is pdf's OCR in markdown format :\n<BEGIN_PDF_OCR>\n" + all_markdown_content + "\n<END_PDF_OCR>\n convert this into a sensible structured json response. The output should be strictly json with no extra commentary",
+                    "content": f"This is pdf's OCR in markdown format :\n<BEGIN_PDF_OCR>\n{ocr_text}\n<END_PDF_OCR>\n"
+                                   "Convert this into a sensible structured JSON response. "
+                                   "The output should be strictly JSON with no extra commentary.",
                 },
             ],
             response_format={"type": "json_object"},
