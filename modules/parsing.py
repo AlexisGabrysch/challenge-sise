@@ -22,18 +22,6 @@ signed_url = client.files.get_signed_url(file_id=uploaded_pdf.id,expiry=1)
 
 pdf_response = client.ocr.process(document=DocumentURLChunk(document_url=signed_url.url),model="mistral-ocr-latest",include_image_base64=True)
 
-# print(pdf_response.pages[0].markdown)
-
-
-# response_dict = json.loads(pdf_response.model_dump_json())
-# json_string = json.dumps(response_dict, indent=4)
-
-# pages = response_dict.get("pages", [])
-# for page in pages:
-#     markdown_content = "\n\n".join(page.get("markdown", "") for page in pages)
-#     print(markdown_content)
-
-
 all_markdown_content = "\n\n".join(page.markdown for page in pdf_response.pages)
 
 import time
