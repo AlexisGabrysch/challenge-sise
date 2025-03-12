@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Page - {{ name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #FF4B4B;
+            text-align: center;
+        }
+        .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .section-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .edit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+        .edit-form textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .form-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .save-btn {
+            padding: 5px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .cancel-btn {
+            padding: 5px 15px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .back-button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #FF4B4B;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section" id="header-section">
+            <h1>{{ header }}</h1>
+            <button class="edit-btn" onclick="toggleEdit('header')">Edit</button>
+            <div class="edit-form" id="header-form">
+                <form action="/user/{{ name }}/update" method="post">
+                    <input type="hidden" name="section" value="header">
+                    <textarea name="content">{{ header }}</textarea>
+                    <div class="form-buttons">
+                        <button type="button" class="cancel-btn" onclick="toggleEdit('header')">Cancel</button>
+                        <button type="submit" class="save-btn">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">About</div>
+            <p id="section1-content">{{ section1 }}</p>
+            <button class="edit-btn" onclick="toggleEdit('section1')">Edit</button>
+            <div class="edit-form" id="section1-form">
+                <form action="/user/{{ name }}/update" method="post">
+                    <input type="hidden" name="section" value="section1">
+                    <textarea name="content">{{ section1 }}</textarea>
+                    <div class="form-buttons">
+                        <button type="button" class="cancel-btn" onclick="toggleEdit('section1')">Cancel</button>
+                        <button type="submit" class="save-btn">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">Additional Information</div>
+            <p id="section2-content">{{ section2 }}</p>
+            <button class="edit-btn" onclick="toggleEdit('section2')">Edit</button>
+            <div class="edit-form" id="section2-form">
+                <form action="/user/{{ name }}/update" method="post">
+                    <input type="hidden" name="section" value="section2">
+                    <textarea name="content">{{ section2 }}</textarea>
+                    <div class="form-buttons">
+                        <button type="button" class="cancel-btn" onclick="toggleEdit('section2')">Cancel</button>
+                        <button type="submit" class="save-btn">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <a href="{{ client_url }}" class="back-button">Return to Main Page</a>
+    </div>
+    
+    <script>
+        // Function to toggle edit forms
+        function toggleEdit(sectionId) {
+            const form = document.getElementById(sectionId + '-form');
+            if (form.style.display === 'block') {
+                form.style.display = 'none';
+            } else {
+                form.style.display = 'block';
+            }
+        }
+        
+        // Simple animation effect on page load
+        window.onload = function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.style.transition = 'opacity 1s';
+                container.style.opacity = '1';
+            }, 100);
+        }
+    </script>
+</body>
+</html>
