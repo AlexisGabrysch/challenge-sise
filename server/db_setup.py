@@ -33,7 +33,7 @@ def setup_database():
         try:
             # Create users table with authentication fields
             execute_query(conn, '''
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS users_login (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
                 email VARCHAR(255) UNIQUE,
@@ -51,7 +51,7 @@ def setup_database():
                 section_name VARCHAR(255) NOT NULL,
                 content TEXT,
                 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (user_id) REFERENCES users_login(id),
                 UNIQUE(user_id, section_name)
             )
             ''')
@@ -64,7 +64,7 @@ def setup_database():
                 session_token VARCHAR(255) NOT NULL UNIQUE,
                 expires_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id)
+                FOREIGN KEY (user_id) REFERENCES users_login(id)
             )
             ''')
             
