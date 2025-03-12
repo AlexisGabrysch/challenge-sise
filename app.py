@@ -6,11 +6,11 @@ import os
 def get_api_url():
     # Check if we're in Streamlit Cloud
     if os.getenv("STREAMLIT_CLOUD", "") == "true":
-        # In cloud, use internal URL with chosen port
-        return "http://localhost:8888"
+        # In cloud, use the deployed URL base
+        return "https://challenge-sise-production.up.railway.app"
     else:
         # Local development
-        return "challenge-sise.railway.internal"
+        return "http://localhost:8000"
 
 # Get the Streamlit URL from environment or use deployed URL
 def get_streamlit_url():
@@ -35,7 +35,7 @@ def show_main_page():
             # Store the name in session state
             st.session_state.user_name = first_name
             
-            # Create a FastAPI user page URL
+            # Create a user page URL using the base URL
             user_url = f"{get_api_url()}/users/{first_name}"
             
             st.success(f"Your personal page has been created!")
@@ -67,10 +67,6 @@ def show_user_page(user_name):
             </script>
         """
         html(redirect_js)
-
-def get_base_url():
-    # In Streamlit Cloud, it will be the deployed URL
-    return get_streamlit_url()
 
 if __name__ == "__main__":
     main()
