@@ -1,174 +1,65 @@
 {
-    "name": "AKREM JOMAA",
-    "email": "akremjomaa@univ-lyon2.fr",
-    "phone": "33750712515",
-    "address": "Lyon, FRANCE",
-    "driver_license": "Permis de conduire B",
+    "name": "Maxence LIQGIER",
+    "address": "A Lyon",
+    "phone": "+33698069771",
+    "email": "maxence.liogier@univ-lyon2.fr",
+    "email2": "maxence.liogier38@gmail.com",
+    "driver_license": "Permis de conduire",
+    "skills": {
+        "informatique": [
+            "Pack Office",
+            "Python",
+            "R",
+            "QGIS",
+            "SQL",
+            "Matlab"
+        ],
+        "languages": [
+            "Anglais",
+            "Espagnol"
+        ],
+        "first_aid": "PSC1 obtenu en 2022"
+    },
+    "activities": [
+        "Cinéma",
+        "Echecs",
+        "Piano",
+        "Course à pied"
+    ],
     "education": {
-        "Master SISE": {
-            "institution": "Institut de la Communication, Université de Lumière Lyon 2",
-            "location": "Lyon, France",
-            "years": "2023-2025",
-            "modules": [
-                "Analyse Statistique",
-                "Biostatistique",
-                "Machine Learning (ML)",
-                "Deep Learning",
-                "Natural Language Processing (NLP)",
-                "LLM",
-                "Data Mining",
-                "Computer Vision",
-                "MLOps",
-                "Systèmes d'informations décisionnels",
-                "Data Warehousing",
-                "Dataviz",
-                "Cloud",
-                "Big Data",
-                "Base de données SQL",
-                "Base de données NoSQL",
-                "Conception agile de projets informatiques",
-                "séries temporelles"
-            ]
+        "univ_lyon2": {
+            "2024-2025": "Master 2 SISE (Statistique et Informatique pour la Science des Données)",
+            "2023-2024": "Master 2 TRT (Transport Réseaux Territoire) Economie des transports"
         },
-        "Licence CIASIE": {
-            "institution": "Institut Universitaire de Technologie NANCY-CHARLEMAGNE",
-            "location": "Nancy, France",
-            "years": "2022-2023",
-            "modules": [
-                "Développement d'applications client web",
-                "Développement services web",
-                "Conception pour le web",
-                "Technologies du web pour la mobilité",
-                "Administration et sécurité des serveurs/services web",
-                "Administration et outils systèmes pour la virtualisation"
-            ]
+        "entpe": {
+            "2021-2024": "Diplôme d'Ingénieur d'Aménagement des Territoires spécialisé dans les Transports"
         },
-        "Licence Ingéniérie des Systèmes de l'Informatique": {
-            "institution": "Institut Supérieur des Sciences Appliquées et de Technologie de Sousse",
-            "location": "Sousse, Tunisie",
-            "years": "2019-2022",
-            "modules": [
-                "Méthodologie génie logiciel",
-                "Base des Données Avancées",
-                "IA et Machine learning",
-                "Big Data",
-                "Sécurité",
-                "Probabilité et statistique"
-            ]
+        "lycee_claude_fauriel": {
+            "2019-2021": "Classe Préparatoire PCSI puis PC*"
         }
     },
-    "experience": {
-        "Développeur web back-end Beegift": {
-            "company": "Beegift",
-            "location": "Commercy, France",
-            "duration": "Avril 2023 - juillet 2023",
-            "responsibilities": [
-                "Mise en oeuvre d'un microservice pour la gestion des E-mails.",
-                "Mise en oeuvre d'un microservice pour la gestion des chèques cadeaux."
-            ],
-            "tools": [
-                "Laravel 10",
-                "Brevo",
-                "Amazon S3",
-                "Docker",
-                "Github",
-                "Trello",
-                "Postman"
-            ]
-        },
-        "Data Scientist": {
-            "company": "Laboratoire Jean Kuntzmann (LJK)",
-            "location": "Grenoble, France",
-            "duration": "Mai - juillet 2024",
-            "responsibilities": [
-                "Collecte de pétitions en ligne au Royaume-Uni à partir de Change.org en utilisant des techniques de web scraping et de web crawling.",
-                "Prétraitement et analyse statistique des pétitions collectées.",
-                "Mise en œuvre d'un modèle de machine learning pour prédire les thématiques à partir des descriptions des pétitions."
-            ],
-            "tools": [
-                "Python",
-                "pandas",
-                "scikit-learn",
-                "NLTK",
-                "Selenium",
-                "R",
-                "dplyr",
-                "ggplot2",
-                "tidyr",
-                "Trello",
-                "Github"
-            ]
-        }
-    },
-    "projects": {
-        "GreenTech Solutions": {
-            "description": "Analyse et prédiction de la performance énergétique des bâtiments",
-            "tools": [
-                "Python",
-                "Scikit-learn",
-                "Plotly",
-                "Dash",
-                "Pandas",
-                "NumPy",
-                "GitHub"
-            ]
-        },
-        "L'Observatoire des Saveurs Lyonnaises": {
-            "description": "Analyse des restaurants lyonnais",
-            "tools": [
-                "Python",
-                "BeautifulSoup",
-                "Streamlit",
-                "Pandas",
-                "Plotly",
-                "Docker",
-                "GitHub"
-            ]
-        }
-    },
-    "skills": [
-        "Python",
-        "Excel",
-        "R",
-        "SAS",
-        "PySpark",
-        "Knime",
-        "Scikit-learn",
-        "PyTorch",
-        "Microsoft Power BI",
-        "Qlik",
-        "Tableau",
-        "Talend",
-        "Snowflake",
-        "Azure Data Factory",
-        "Docker",
-        "GIT",
-        "Agile",
-        "SQL",
-        "NOSQL",
-        "Shiny",
-        "Dash",
-        "Streamlit",
-        "MERN Stack",
-        "ASP",
-        "Net Core",
-        "Laravel"
-    ],
-    "certifications": [
+    "experiences": [
         {
-            "name": "Oracle Cloud Infrastructure 2023 Al Certified Foundations Associate",
-            "topics": [
-                "Oracle AI services",
-                "Oracle ML services",
-                "AI fundamental concepts",
-                "Machine Learning and Deep Learning concepts and terminologies",
-                "Oracle Generative AI"
+            "company": "Setec International",
+            "duration": "Avril - Août 2024",
+            "role": "Travail de fin d'études",
+            "description": "Mémoire sur l'optimisation des matrices Origine-Destination issues des données de téléphonie mobile (Flux Vision)",
+            "competences": [
+                "Maitrise du traitement des données de téléphonie mobile de mobilité",
+                "Renforcement sur Python",
+                "Méthode Agile/Scrum"
             ]
         },
-        "Certification Pix"
-    ],
-    "languages": {
-        "French": "Compétence professionnelle",
-        "English": "Compétence professionnelle"
-    }
+        {
+            "company": "Bruxelles Mobilité",
+            "duration": "Avril - Août 2023",
+            "role": "Stage de deuxième année d'école d'ingénieur",
+            "description": "Travaux sur la ville des courtes distances ainsi que sur les questions d'accessibilité en ville",
+            "competences": [
+                "Manipulation de lourdes bases de données : floating mobile data",
+                "Renforcement sur R et QGIS",
+                "Appréhension des enjeux entourant la mobilité"
+            ]
+        }
+    ]
 }
