@@ -4,10 +4,10 @@ from modules.ocr_extraction import extract_text_from_pdf
 from modules.llm_structuring import structure_cv_json
 
 # 📌 Infos utilisateur + Fichier CV
-USER_EMAIL = "test@email.com"
-USER_PASSWORD = "test123"
-USER_NAME = "test"
-PDF_PATH = "data/CV-JOMAA.pdf"
+USER_EMAIL = "maxence@email.com"
+USER_PASSWORD = "maxence123"
+USER_NAME = "maxence"
+PDF_PATH = "CV/CV_Maxence_Liogier.pdf"
 
 # 📌 Pipeline : Création utilisateur → Extraction du CV → Attribution du CV
 def process_user_and_cv(email, password, user_name, pdf_path):
