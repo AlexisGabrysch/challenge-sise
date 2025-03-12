@@ -97,8 +97,8 @@
             <h1>{{ header }}</h1>
             <button class="edit-btn" onclick="toggleEdit('header')">Edit</button>
             <div class="edit-form" id="header-form">
-                <!-- Changé de /users/ à /user/ -->
-                <form action="/user/{{ name }}/update" method="post">
+                <!-- Formulaire avec le même chemin relatif que l'URL d'accès -->
+                <form action="./{{ name }}/update" method="post">
                     <input type="hidden" name="section" value="header">
                     <textarea name="content">{{ header }}</textarea>
                     <div class="form-buttons">
@@ -114,8 +114,8 @@
             <p id="section1-content">{{ section1 }}</p>
             <button class="edit-btn" onclick="toggleEdit('section1')">Edit</button>
             <div class="edit-form" id="section1-form">
-                <!-- Changé de /users/ à /user/ -->
-                <form action="/user/{{ name }}/update" method="post">
+                <!-- Formulaire avec le même chemin relatif que l'URL d'accès -->
+                <form action="./{{ name }}/update" method="post">
                     <input type="hidden" name="section" value="section1">
                     <textarea name="content">{{ section1 }}</textarea>
                     <div class="form-buttons">
@@ -131,8 +131,8 @@
             <p id="section2-content">{{ section2 }}</p>
             <button class="edit-btn" onclick="toggleEdit('section2')">Edit</button>
             <div class="edit-form" id="section2-form">
-                <!-- Changé de /users/ à /user/ -->
-                <form action="/user/{{ name }}/update" method="post">
+                <!-- Formulaire avec le même chemin relatif que l'URL d'accès -->
+                <form action="./{{ name }}/update" method="post">
                     <input type="hidden" name="section" value="section2">
                     <textarea name="content">{{ section2 }}</textarea>
                     <div class="form-buttons">

@@ -5,9 +5,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
+import logging
 from typing import Dict, Any, Optional
 from connection import connect_to_mysql, execute_query, close_connection
 from db_setup import setup_database
+
+# Configuration du logging
+logging.basicConfig(
+    level=logging.DEBUG if os.getenv("LOG_LEVEL") == "debug" else logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -38,13 +46,17 @@ DB_CONFIG = {
 }
 
 # URLs for redirects
-CLIENT_URL = os.getenv("CLIENT_URL", "https://challenge-sise-client.up.railway.app")
-SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production.up.railway.app")
+CLIENT_URL = os.getenv("CLIENT_URL", "https://beneficial-liberation-production.up.railway.app")
+SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
+
+logger.debug(f"CLIENT_URL: {CLIENT_URL}")
+logger.debug(f"SERVER_URL: {SERVER_URL}")
 
 # Helper to get or create user
 def get_or_create_user(name: str):
     conn = connect_to_mysql(**DB_CONFIG)
     if not conn:
+        logger.error("Failed to connect to database")
         raise HTTPException(status_code=500, detail="Database connection error")
     
     try:
@@ -55,13 +67,18 @@ def get_or_create_user(name: str):
         user = cursor.fetchone()
         
         if user:
+            logger.debug(f"Found existing user with id: {user['id']}")
             return user["id"]
         
         # Create new user
         cursor.execute("INSERT INTO users (name) VALUES (%s)", (name,))
         conn.commit()
         user_id = cursor.lastrowid
+        logger.debug(f"Created new user with id: {user_id}")
         return user_id
+    except Exception as e:
+        logger.error(f"Error in get_or_create_user: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         cursor.close()
         close_connection(conn)
@@ -98,6 +115,7 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
+    logger.debug("Root endpoint accessed")
     # Redirect to Client app
     html_content = f"""
     <html>
@@ -106,62 +124,59 @@ async def root(request: Request):
             <meta http-equiv="refresh" content="0;url={CLIENT_URL}" />
         </head>
         <body>
-            <p>Redirecting to the app...</p>
+            <p>Redirecting to the app at {CLIENT_URL}...</p>
         </body>
     </html>
     """
     return HTMLResponse(content=html_content)
 
-# Ajoutez cette route pour gérer également les requêtes sur /users/{name}
-@app.get("/users/{name}", response_class=HTMLResponse)
-async def legacy_user_page(request: Request, name: str):
-    # Rediriger vers le nouveau chemin /user/{name}
-    return RedirectResponse(url=f"/user/{name}")
+# Test endpoint
+@app.get("/test", response_class=HTMLResponse)
+async def test(request: Request):
+    logger.debug("Test endpoint accessed")
+    return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
 
+# Support both /users/ and /user/
+@app.get("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str):
-    # Get or create user
-    user_id = get_or_create_user(name)
-    
-    # Get or create default content for sections
-    header_content = get_or_create_content(user_id, "header", f"Welcome to {name}'s Page")
-    
-    section1_content = get_or_create_content(
-        user_id, 
-        "section1", 
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eget efficitur magna. Suspendisse potenti."
-    )
-    
-    section2_content = get_or_create_content(
-        user_id, 
-        "section2", 
-        "Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper."
-    )
-    
-    return templates.TemplateResponse(
-        "user_template.html", 
-        {
-            "request": request, 
-            "name": name, 
-            "header": header_content,
-            "section1": section1_content, 
-            "section2": section2_content,
-            "client_url": CLIENT_URL  # Pass Client URL to template
-        }
-    )
+    logger.debug(f"User page accessed for name: {name}")
+    try:
+        # Get or create user
+        user_id = get_or_create_user(name)
+        
+        # Get or create default content for sections
+        header_content = get_or_create_content(user_id, "header", f"Welcome to {name}'s Page")
+        
+        section1_content = get_or_create_content(
+            user_id, 
+            "section1", 
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eget efficitur magna. Suspendisse potenti."
+        )
+        
+        section2_content = get_or_create_content(
+            user_id, 
+            "section2", 
+            "Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper."
+        )
+        
+        return templates.TemplateResponse(
+            "user_template.html", 
+            {
+                "request": request, 
+                "name": name, 
+                "header": header_content,
+                "section1": section1_content, 
+                "section2": section2_content,
+                "client_url": CLIENT_URL  # Pass Client URL to template
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error serving user page: {e}")
+        return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
 
-# Ajoutez cette route pour gérer les requêtes sur l'ancien chemin
+# Support both paths for updates
 @app.post("/users/{name}/update", response_class=RedirectResponse)
-async def legacy_update_content(
-    request: Request,
-    name: str,
-    section: str = Form(...),
-    content: str = Form(...)
-):
-    # Redirigez vers la nouvelle route pour la compatibilité
-    result = await update_content(request, name, section, content)
-    return result
-
 @app.post("/user/{name}/update", response_class=RedirectResponse)
 async def update_content(
     request: Request,
@@ -169,6 +184,7 @@ async def update_content(
     section: str = Form(...),
     content: str = Form(...)
 ):
+    logger.debug(f"Update content for user: {name}, section: {section}")
     conn = connect_to_mysql(**DB_CONFIG)
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection error")
@@ -205,8 +221,14 @@ async def update_content(
         
         conn.commit()
         
-        # Redirect back to user page - changed to /user/ from /users/
-        return RedirectResponse(url=f"/user/{name}", status_code=303)
+        # Use the same path format as the request
+        if request.url.path.startswith("/user/"):
+            redirect_path = f"/user/{name}"
+        else:
+            redirect_path = f"/users/{name}"
+        
+        logger.debug(f"Redirecting to: {redirect_path}")
+        return RedirectResponse(url=redirect_path, status_code=303)
     finally:
         cursor.close()
         close_connection(conn)
@@ -214,11 +236,17 @@ async def update_content(
 # Setup database tables when the application starts
 @app.on_event("startup")
 async def startup_event():
-    setup_database()
+    logger.info("Starting application, setting up database...")
+    try:
+        setup_database()
+        logger.info("Database setup complete")
+    except Exception as e:
+        logger.error(f"Error setting up database: {e}")
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
     port = int(os.getenv("PORT", 8000))
     # Use 0.0.0.0 to listen on all interfaces in cloud environments
     host = os.getenv("HOST", "0.0.0.0")
-    uvicorn.run("api:app", host=host, port=port, log_level="info")
+    logger.info(f"Starting server on {host}:{port}")
+    uvicorn.run("api:app", host=host, port=port, log_level="debug")

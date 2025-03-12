@@ -12,10 +12,14 @@ COPY templates/ templates/
 RUN mkdir -p static
 
 # Variables d'environnement pour Railway
-ENV SERVER_URL=challenge-sise.railway.internal
-ENV CLIENT_URL=beneficial-liberation.railway.internal
+# Suppression des slashes finaux pour éviter les doubles slashes dans les URLs
+ENV SERVER_URL=https://challenge-sise-production-0bc4.up.railway.app
+ENV CLIENT_URL=https://beneficial-liberation-production.up.railway.app
 ENV PORT=8000
 ENV HOST=0.0.0.0
+
+# Pour debug - log plus détaillé
+ENV LOG_LEVEL=debug
 
 # Exposer le port FastAPI
 EXPOSE 8000
