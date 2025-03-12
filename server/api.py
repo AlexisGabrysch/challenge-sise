@@ -55,6 +55,9 @@ DB_CONFIG = {
 
 # URLs for redirects
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
+# Ajoutez cette ligne après la définition de SERVER_URL
+CLIENT_URL = os.getenv("CLIENT_URL", "https://beneficial-liberation-production.up.railway.app")
+logger.debug(f"CLIENT_URL: {CLIENT_URL}")
 
 logger.debug(f"SERVER_URL: {SERVER_URL}")
 
@@ -445,7 +448,7 @@ async def user_page(request: Request, name: str):
                 "header": header_content,
                 "section1": section1_content, 
                 "section2": section2_content,
-                "client_url": SERVER_URL,
+                "client_url": CLIENT_URL,  # Utilisez CLIENT_URL au lieu de SERVER_URL ici
                 "is_owner": is_owner,
                 "logged_in": session_token is not None
             }

@@ -44,6 +44,9 @@
             border-radius: 3px;
             cursor: pointer;
         }
+        .edit-btn.hidden {
+            display: none;
+        }
         .edit-form {
             display: none;
             margin-top: 10px;
@@ -76,24 +79,52 @@
             border-radius: 3px;
             cursor: pointer;
         }
-        .back-button {
-            display: block;
+        .button {
+            display: inline-block;
             width: 200px;
-            margin: 20px auto;
+            margin: 10px auto;
             padding: 10px 20px;
-            background-color: #FF4B4B;
-            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             text-decoration: none;
             text-align: center;
+            font-weight: bold;
+        }
+        .back-button {
+            background-color: #FF4B4B;
+            color: white;
+        }
+        .edit-online-button {
+            background-color: #4285F4;
+            color: white;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            color: white;
+        }
+        .public-badge {
+            background-color: #4CAF50;
+        }
+        .viewing-badge {
+            background-color: #FF4B4B;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="section" id="header-section">
+            <button class="edit-btn {% if not is_owner %}hidden{% endif %}" onclick="toggleEdit('header')">Edit</button>
             <h1>{{ header }}</h1>
             <button class="edit-btn" onclick="toggleEdit('header')">Edit</button>
             <div class="edit-form" id="header-form">
@@ -110,7 +141,7 @@
         </div>
         
         <div class="section">
-            <div class="section-header">About</div>
+            <button class="edit-btn {% if not is_owner %}hidden{% endif %}" onclick="toggleEdit('section1')">Edit</button>
             <p id="section1-content">{{ section1 }}</p>
             <button class="edit-btn" onclick="toggleEdit('section1')">Edit</button>
             <div class="edit-form" id="section1-form">
@@ -127,7 +158,7 @@
         </div>
         
         <div class="section">
-            <div class="section-header">Additional Information</div>
+            <button class="edit-btn {% if not is_owner %}hidden{% endif %}" onclick="toggleEdit('section2')">Edit</button>
             <p id="section2-content">{{ section2 }}</p>
             <button class="edit-btn" onclick="toggleEdit('section2')">Edit</button>
             <div class="edit-form" id="section2-form">
@@ -143,7 +174,27 @@
             </div>
         </div>
         
-        <a href="{{ client_url }}" class="back-button">Return to Main Page</a>
+        <div class="button-container">
+            <!-- Ajouter un lien vers la page de gestion Streamlit -->
+            <a href="{{ client_url }}" class="button back-button">Return to Main Page</a>
+            
+            {% if not is_owner %}
+            <!-- Pour les visiteurs, montrer un lien pour créer leur propre CV -->
+            <a href="{{ client_url }}/register" class="button edit-online-button">Create your own CV</a>
+            {% else %}
+            <!-- Pour les propriétaires, montrer un lien pour éditer sur Streamlit -->
+            <a href="{{ client_url }}" class="button edit-online-button">Edit in Streamlit App</a>
+            {% endif %}
+        </div>
+
+        <p style="text-align: center; margin-top: 20px; font-size: 12px; color: #888;">
+            This is a public CV page. 
+            {% if is_owner %}
+            As the owner, you can edit this content directly or use the Streamlit app for a better editing experience.
+            {% else %}
+            You are viewing someone else's CV. Register to create your own.
+            {% endif %}
+        </p>
     </div>
     
     <script>

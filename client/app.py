@@ -114,6 +114,23 @@ def update_cv_section(username: str, section: str, content: str) -> bool:
         st.error(f"Error updating CV section: {e}")
         return False
 
+# Ajouter cette fonction pour afficher un lien vers la version publique du CV
+def show_public_cv_link(username: str):
+    public_cv_url = f"{SERVER_URL}/user/{username}"
+    st.markdown("""
+    <div style="margin-top: 30px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; text-align: center;">
+        <p>Share your public CV:</p>
+        <a href="{}" target="_blank" style="text-decoration: none;">
+            <div style="display: inline-block; padding: 10px 20px; background-color: #4285F4; color: white; border-radius: 5px; font-weight: bold;">
+                View Public CV
+            </div>
+        </a>
+        <p style="margin-top: 10px; font-size: 12px; color: #888;">
+            This link can be shared with anyone, even if they don't have an account.
+        </p>
+    </div>
+    """.format(public_cv_url), unsafe_allow_html=True)
+
 def show_login_page():
     st.title("Login")
     
@@ -178,6 +195,9 @@ def show_user_profile():
             st.session_state.page = PAGE_EDIT_CV
             st.rerun()
     
+    # Ajouter le lien vers le CV public
+    show_public_cv_link(st.session_state.user["name"])
+    
     if st.button("Logout", key="logout_btn_profile"):
         logout()
         st.rerun()
@@ -202,6 +222,9 @@ def show_view_cv():
         
         st.subheader("Additional Information")
         st.write(cv_data.get("section2", "No information available"))
+    
+    # Ajouter le lien vers le CV public
+    show_public_cv_link(username)
     
     col1, col2 = st.columns(2)
     
@@ -264,6 +287,9 @@ def show_edit_cv():
                 st.success("Additional information updated successfully")
             else:
                 st.error("Failed to update Additional information")
+    
+    # Ajouter le lien vers le CV public
+    show_public_cv_link(username)
     
     col1, col2 = st.columns(2)
     
