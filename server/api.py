@@ -45,11 +45,9 @@ DB_CONFIG = {
     'port': 40146
 }
 
-# URLs for redirects
-CLIENT_URL = os.getenv("CLIENT_URL", "https://beneficial-liberation-production.up.railway.app")
+# URLs for redirects - Ne pas utiliser ici car cause des problèmes de redirection interne
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
-logger.debug(f"CLIENT_URL: {CLIENT_URL}")
 logger.debug(f"SERVER_URL: {SERVER_URL}")
 
 # Helper to get or create user
@@ -116,15 +114,55 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     logger.debug("Root endpoint accessed")
-    # Redirect to Client app
-    html_content = f"""
+    # Au lieu de rediriger, afficher une page d'accueil simple
+    html_content = """
     <html>
         <head>
-            <title>Redirecting...</title>
-            <meta http-equiv="refresh" content="0;url={CLIENT_URL}" />
+            <title>Personal Pages API</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                    text-align: center;
+                }
+                .container {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: white;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                }
+                h1 {
+                    color: #FF4B4B;
+                }
+                p {
+                    line-height: 1.6;
+                }
+                .btn {
+                    display: inline-block;
+                    padding: 10px 20px;
+                    margin: 10px;
+                    background-color: #4CAF50;
+                    color: white;
+                    border-radius: 5px;
+                    text-decoration: none;
+                }
+            </style>
         </head>
         <body>
-            <p>Redirecting to the app at {CLIENT_URL}...</p>
+            <div class="container">
+                <h1>Welcome to Personal Pages API</h1>
+                <p>This API allows you to create and manage personal pages with customizable content.</p>
+                <p>To view a user's page, use the following URL pattern:</p>
+                <code>/user/{name}</code>
+                <p>Example:</p>
+                <a href="/user/alexis" class="btn">View Alexis' Page</a>
+                <p>You can test the API's health by visiting:</p>
+                <a href="/test" class="btn">Test API</a>
+            </div>
         </body>
     </html>
     """
@@ -168,7 +206,7 @@ async def user_page(request: Request, name: str):
                 "header": header_content,
                 "section1": section1_content, 
                 "section2": section2_content,
-                "client_url": CLIENT_URL  # Pass Client URL to template
+                "client_url": SERVER_URL  # Utilisez SERVER_URL comme page de retour
             }
         )
     except Exception as e:
@@ -249,4 +287,4 @@ if __name__ == "__main__":
     # Use 0.0.0.0 to listen on all interfaces in cloud environments
     host = os.getenv("HOST", "0.0.0.0")
     logger.info(f"Starting server on {host}:{port}")
-    uvicorn.run("api:app", host=host, port=port, log_level="debug")
+    uvicorn.run("api:app", host=host, port=port, log_level="info")
