@@ -1,41 +1,50 @@
-import sqlite3
-import os
+from connection import connect_to_mysql, execute_query, close_connection
 
 def setup_database():
-    # Create database directory if it doesn't exist
-    os.makedirs("data", exist_ok=True)
+    """
+    Sets up the MySQL database tables if they don't exist
+    """
+    # MySQL connection configuration
+    config = {
+        'host': 'maglev.proxy.rlwy.net',
+        'user': 'root',
+        'password': 'EeXtIBwNKhAyySgijzeanMRgNAQifsmZ',
+        'database': 'railway',
+        'port': 40146
+    }
     
-    # Connect to SQLite database (creates it if it doesn't exist)
-    conn = sqlite3.connect('data/users.db')
-    cursor = conn.cursor()
+    # Connect to MySQL
+    conn = connect_to_mysql(**config)
     
-    # Create users table
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
-    
-    # Create user_content table for storing editable sections
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS user_content (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        section_name TEXT NOT NULL,
-        content TEXT,
-        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id),
-        UNIQUE(user_id, section_name)
-    )
-    ''')
-    
-    # Commit changes and close connection
-    conn.commit()
-    conn.close()
-    
-    print("Database setup complete!")
+    if conn:
+        try:
+            # Create users table
+            execute_query(conn, '''
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+            
+            # Create user_content table
+            execute_query(conn, '''
+            CREATE TABLE IF NOT EXISTS user_content (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                section_name VARCHAR(255) NOT NULL,
+                content TEXT,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE(user_id, section_name)
+            )
+            ''')
+            
+            print("Database setup complete!")
+        finally:
+            close_connection(conn)
+    else:
+        print("Failed to connect to MySQL database")
 
 if __name__ == "__main__":
     setup_database()
