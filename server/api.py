@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie, Body, Header
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +8,7 @@ import uvicorn
 import os
 import logging
 from typing import Dict, Any, Optional
+from pydantic import BaseModel
 from connection import connect_to_mysql, execute_query, close_connection
 from db_setup import setup_database
 from auth import (
@@ -117,6 +118,147 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
     finally:
         cursor.close()
         close_connection(conn)
+
+# Classe pour la validation des données d'entrée
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class CVUpdateRequest(BaseModel):
+    section: str
+    content: str
+
+# --------- API JSON Routes for Streamlit Client ---------
+
+@app.post("/api/login")
+async def api_login(login_data: LoginRequest):
+    """API endpoint pour la connexion"""
+    logger.debug(f"API Login attempt: {login_data.email}")
+    
+    # Authenticate user
+    user = authenticate_user(DB_CONFIG, login_data.email, login_data.password)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Create session
+    session_token = create_session(DB_CONFIG, user["id"])
+    
+    # Return user data and token
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "session_token": session_token
+    }
+
+@app.post("/api/register")
+async def api_register(register_data: RegisterRequest):
+    """API endpoint pour l'inscription"""
+    logger.debug(f"API Register attempt: {register_data.name}, {register_data.email}")
+    
+    try:
+        # Create user
+        user_id = create_user(DB_CONFIG, register_data.name, register_data.email, register_data.password)
+        
+        # Create session
+        session_token = create_session(DB_CONFIG, user_id)
+        
+        # Return user data and token
+        return {
+            "id": user_id,
+            "name": register_data.name,
+            "email": register_data.email,
+            "session_token": session_token
+        }
+    
+    except HTTPException as e:
+        raise e
+
+@app.get("/api/cv/{name}")
+async def api_get_cv(name: str, authorization: str = Header(None)):
+    """API endpoint pour récupérer les données du CV"""
+    logger.debug(f"API Get CV: {name}")
+    
+    # Get or create user
+    user_id = get_or_create_user(name)
+    
+    # Get CV content
+    header_content = get_or_create_content(user_id, "header", f"Welcome to {name}'s Page")
+    section1_content = get_or_create_content(
+        user_id, 
+        "section1", 
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    )
+    section2_content = get_or_create_content(
+        user_id, 
+        "section2", 
+        "Donec ullamcorper nulla non metus auctor fringilla."
+    )
+    
+    # Return CV data
+    return {
+        "name": name,
+        "header": header_content,
+        "section1": section1_content,
+        "section2": section2_content
+    }
+
+@app.post("/api/cv/{name}/update")
+async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: str = Header(None)):
+    """API endpoint pour mettre à jour une section du CV"""
+    logger.debug(f"API Update CV: {name}, Section: {update_data.section}")
+    
+    # Extract session token from Authorization header
+    session_token = None
+    if authorization and authorization.startswith("Bearer "):
+        session_token = authorization[7:]  # Remove "Bearer " prefix
+    
+    # Check authorization - only page owner can update
+    if not session_token or not is_page_owner(DB_CONFIG, session_token, name):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
+    
+    # Get user id
+    user_id = get_or_create_user(name)
+    
+    # Update content
+    conn = connect_to_mysql(**DB_CONFIG)
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection error")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Try to update existing content
+        cursor.execute(
+            """
+            UPDATE user_content 
+            SET content = %s, last_updated = CURRENT_TIMESTAMP 
+            WHERE user_id = %s AND section_name = %s
+            """,
+            (update_data.content, user_id, update_data.section)
+        )
+        
+        # Check if any rows were updated
+        if cursor.rowcount == 0:
+            # If no rows were updated, insert new content
+            cursor.execute(
+                "INSERT INTO user_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+                (user_id, update_data.section, update_data.content)
+            )
+        
+        conn.commit()
+        
+        return {"status": "success"}
+    finally:
+        conn.close()
+
+# --------- Existing routes ---------
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):

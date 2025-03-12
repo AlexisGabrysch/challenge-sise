@@ -4,114 +4,300 @@ import os
 import sys
 import mysql.connector
 from mysql.connector import Error
+import requests
+import json
+from typing import Optional, Dict, Any
 
-# MySQL connection configuration
-DB_CONFIG = {
-    'host': 'maglev.proxy.rlwy.net',
-    'user': 'root',
-    'password': 'EeXtIBwNKhAyySgijzeanMRgNAQifsmZ',
-    'database': 'railway',
-    'port': 40146
-}
+# Configuration URLs
+SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
-# API URL configuration
-SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production.up.railway.app")
-CLIENT_URL = os.getenv("CLIENT_URL", "https://challenge-sise-client.up.railway.app")
+# Définir les pages de l'application
+PAGE_LOGIN = "login"
+PAGE_REGISTER = "register"
+PAGE_USER_PROFILE = "profile"
+PAGE_EDIT_CV = "edit_cv"
+PAGE_VIEW_CV = "view_cv"
 
-def connect_to_mysql(host, user, password, database=None, port=3306):
-    """
-    Établit une connexion à une base de données MySQL distante
-    """
-    connection = None
+# Initialiser l'état de session
+if "page" not in st.session_state:
+    st.session_state.page = PAGE_LOGIN
+
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+if "session_token" not in st.session_state:
+    st.session_state.session_token = None
+
+def set_page(page: str):
+    """Change la page actuelle"""
+    st.session_state.page = page
+    st.experimental_rerun()
+
+def login(email: str, password: str) -> bool:
+    """Authentifie l'utilisateur avec le serveur API"""
     try:
-        connection = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=port
+        response = requests.post(
+            f"{SERVER_URL}/api/login",
+            json={"email": email, "password": password}
         )
-        print(f"Connexion à MySQL réussie - Version de MySQL: {connection.get_server_info()}")
         
-    except Error as err:
-        print(f"Erreur: '{err}'")
-        connection = None
+        if response.status_code == 200:
+            data = response.json()
+            st.session_state.user = {
+                "id": data["id"],
+                "name": data["name"],
+                "email": data["email"]
+            }
+            st.session_state.session_token = data["session_token"]
+            return True
+        return False
+    except Exception as e:
+        st.error(f"Error connecting to server: {e}")
+        return False
+
+def register(name: str, email: str, password: str) -> bool:
+    """Crée un nouvel utilisateur sur le serveur API"""
+    try:
+        response = requests.post(
+            f"{SERVER_URL}/api/register",
+            json={"name": name, "email": email, "password": password}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            st.session_state.user = {
+                "id": data["id"],
+                "name": data["name"],
+                "email": data["email"]
+            }
+            st.session_state.session_token = data["session_token"]
+            return True
+        else:
+            st.error(f"Registration failed: {response.json().get('detail', 'Unknown error')}")
+            return False
+    except Exception as e:
+        st.error(f"Error connecting to server: {e}")
+        return False
+
+def logout():
+    """Déconnecte l'utilisateur"""
+    st.session_state.user = None
+    st.session_state.session_token = None
+    st.session_state.page = PAGE_LOGIN
     
-    return connection
+def get_cv_data(username: str) -> Optional[Dict[str, Any]]:
+    """Récupère les données du CV depuis l'API"""
+    try:
+        response = requests.get(
+            f"{SERVER_URL}/api/cv/{username}",
+            headers={"Authorization": f"Bearer {st.session_state.session_token}"} if st.session_state.session_token else {}
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except Exception as e:
+        st.error(f"Error retrieving CV data: {e}")
+        return None
+
+def update_cv_section(username: str, section: str, content: str) -> bool:
+    """Met à jour une section du CV via l'API"""
+    try:
+        response = requests.post(
+            f"{SERVER_URL}/api/cv/{username}/update",
+            headers={"Authorization": f"Bearer {st.session_state.session_token}"},
+            json={"section": section, "content": content}
+        )
+        
+        return response.status_code == 200
+    except Exception as e:
+        st.error(f"Error updating CV section: {e}")
+        return False
+
+def show_login_page():
+    st.title("Login")
+    
+    with st.form("login_form"):
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Login")
+        
+        if submit:
+            if login(email, password):
+                st.session_state.page = PAGE_USER_PROFILE
+                st.experimental_rerun()
+            else:
+                st.error("Invalid email or password")
+    
+    st.write("Don't have an account?")
+    if st.button("Register"):
+        st.session_state.page = PAGE_REGISTER
+        st.experimental_rerun()
+
+def show_register_page():
+    st.title("Register")
+    
+    with st.form("register_form"):
+        name = st.text_input("Username")
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        password_confirm = st.text_input("Confirm Password", type="password")
+        submit = st.form_submit_button("Register")
+        
+        if submit:
+            if password != password_confirm:
+                st.error("Passwords do not match")
+            elif not name or not email or not password:
+                st.error("All fields are required")
+            else:
+                if register(name, email, password):
+                    st.session_state.page = PAGE_USER_PROFILE
+                    st.experimental_rerun()
+    
+    st.write("Already have an account?")
+    if st.button("Login"):
+        st.session_state.page = PAGE_LOGIN
+        st.experimental_rerun()
+
+def show_user_profile():
+    if not st.session_state.user:
+        st.session_state.page = PAGE_LOGIN
+        st.experimental_rerun()
+        
+    st.title(f"Welcome, {st.session_state.user['name']}!")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("View My CV"):
+            st.session_state.page = PAGE_VIEW_CV
+            st.experimental_rerun()
+    
+    with col2:
+        if st.button("Edit My CV"):
+            st.session_state.page = PAGE_EDIT_CV
+            st.experimental_rerun()
+    
+    if st.button("Logout"):
+        logout()
+        st.experimental_rerun()
+
+def show_view_cv():
+    if not st.session_state.user:
+        st.session_state.page = PAGE_LOGIN
+        st.experimental_rerun()
+    
+    username = st.session_state.user["name"]
+    st.title(f"{username}'s CV")
+    
+    cv_data = get_cv_data(username)
+    
+    if not cv_data:
+        st.warning("CV data could not be loaded")
+    else:
+        st.header(cv_data.get("header", f"Welcome to {username}'s CV"))
+        
+        st.subheader("About")
+        st.write(cv_data.get("section1", "No information available"))
+        
+        st.subheader("Additional Information")
+        st.write(cv_data.get("section2", "No information available"))
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("Back to Profile"):
+            st.session_state.page = PAGE_USER_PROFILE
+            st.experimental_rerun()
+    
+    with col2:
+        if st.button("Edit CV"):
+            st.session_state.page = PAGE_EDIT_CV
+            st.experimental_rerun()
+
+def show_edit_cv():
+    if not st.session_state.user:
+        st.session_state.page = PAGE_LOGIN
+        st.experimental_rerun()
+    
+    username = st.session_state.user["name"]
+    st.title(f"Edit {username}'s CV")
+    
+    cv_data = get_cv_data(username)
+    
+    if not cv_data:
+        st.warning("CV data could not be loaded")
+        if st.button("Back to Profile"):
+            st.session_state.page = PAGE_USER_PROFILE
+            st.experimental_rerun()
+        return
+    
+    with st.form("edit_header_form"):
+        st.subheader("Header")
+        header = st.text_input("Header", value=cv_data.get("header", f"Welcome to {username}'s CV"))
+        submit_header = st.form_submit_button("Update Header")
+        
+        if submit_header:
+            if update_cv_section(username, "header", header):
+                st.success("Header updated successfully")
+            else:
+                st.error("Failed to update header")
+    
+    with st.form("edit_section1_form"):
+        st.subheader("About")
+        section1 = st.text_area("About", value=cv_data.get("section1", ""))
+        submit_section1 = st.form_submit_button("Update About Section")
+        
+        if submit_section1:
+            if update_cv_section(username, "section1", section1):
+                st.success("About section updated successfully")
+            else:
+                st.error("Failed to update About section")
+    
+    with st.form("edit_section2_form"):
+        st.subheader("Additional Information")
+        section2 = st.text_area("Additional Information", value=cv_data.get("section2", ""))
+        submit_section2 = st.form_submit_button("Update Additional Information Section")
+        
+        if submit_section2:
+            if update_cv_section(username, "section2", section2):
+                st.success("Additional information updated successfully")
+            else:
+                st.error("Failed to update Additional information")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("Back to Profile"):
+            st.session_state.page = PAGE_USER_PROFILE
+            st.experimental_rerun()
+    
+    with col2:
+        if st.button("View CV"):
+            st.session_state.page = PAGE_VIEW_CV
+            st.experimental_rerun()
 
 def main():
-    # Initialize MySQL connection at startup
-    if 'mysql_connection' not in st.session_state:
-        conn = connect_to_mysql(**DB_CONFIG)
-        if conn:
-            st.session_state.mysql_connection = conn
-            st.success("Connected to MySQL database")
-        else:
-            st.error("Failed to connect to MySQL database")
+    # Sidebar avec le nom de l'app
+    st.sidebar.title("CV Manager")
     
-    # Check if we are on a user page
-    query_params = st.query_params
-    if "name" in query_params:
-        user_name = query_params["name"]
-        show_user_page(user_name)
-    else:
-        show_main_page()
-
-def show_main_page():
-    st.title("Personalized Page Creator")
+    if st.session_state.user:
+        st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
+        if st.sidebar.button("Logout"):
+            logout()
+            st.experimental_rerun()
     
-    first_name = st.text_input("Enter your first name:")
-    
-    if st.button("Create Your Page"):
-        if first_name:
-            # Store the name in session state
-            st.session_state.user_name = first_name
-            
-            # Create user page URL using the SERVER URL - changed from /users/ to /user/
-            user_url = f"{SERVER_URL}/user/{first_name}"
-            
-            st.success(f"Your personal page has been created!")
-            st.markdown(f"[Visit your page]({user_url})")
-            
-            # Alternatively, use JS to redirect
-            if st.button("Go to page now"):
-                redirect_js = f"""
-                    <script>
-                    window.location.href = "{user_url}";
-                    </script>
-                """
-                html(redirect_js)
-        else:
-            st.error("Please enter a name.")
-
-def show_user_page(user_name):
-    st.title(f"Welcome to your page, {user_name}!")
-    st.write(f"This is your personalized page.")
-    st.balloons()
-    
-    # Changed from /users/ to /user/
-    user_url = f"{SERVER_URL}/user/{user_name}"
-    st.markdown(f"[Visit your custom page with editable sections]({user_url})")
-    
-    if st.button("Return to Main Page"):
-        redirect_js = f"""
-            <script>
-            window.location.href = "{CLIENT_URL}";
-            </script>
-        """
-        html(redirect_js)
-
-# Close MySQL connection when the app exits
-def on_shutdown():
-    if 'mysql_connection' in st.session_state:
-        try:
-            st.session_state.mysql_connection.close()
-            print("MySQL connection closed")
-        except Exception as e:
-            print(f"Error closing MySQL connection: {e}")
+    # Afficher la page actuelle
+    if st.session_state.page == PAGE_LOGIN:
+        show_login_page()
+    elif st.session_state.page == PAGE_REGISTER:
+        show_register_page()
+    elif st.session_state.page == PAGE_USER_PROFILE:
+        show_user_profile()
+    elif st.session_state.page == PAGE_VIEW_CV:
+        show_view_cv()
+    elif st.session_state.page == PAGE_EDIT_CV:
+        show_edit_cv()
 
 if __name__ == "__main__":
     main()
-    # Register shutdown hook
-    import atexit
-    atexit.register(on_shutdown)
