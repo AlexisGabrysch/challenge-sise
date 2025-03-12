@@ -68,16 +68,29 @@ def get_or_create_user(name: str):
     try:
         cursor = conn.cursor(dictionary=True)
         
-        # Check if user exists
-        cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
+        # Check if user exists in users_login table first
+        cursor.execute("SELECT id FROM users_login WHERE name = %s", (name,))
         user = cursor.fetchone()
         
         if user:
-            logger.debug(f"Found existing user with id: {user['id']}")
+            logger.debug(f"Found existing user in users_login with id: {user['id']}")
             return user["id"]
+            
+        # If not found in users_login, check the legacy users table if it exists
+        try:
+            cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
+            user = cursor.fetchone()
+            
+            if user:
+                logger.debug(f"Found existing user in users table with id: {user['id']}")
+                return user["id"]
+        except Exception as e:
+            # Table might not exist, ignore this error
+            logger.debug(f"Could not check users table: {e}")
         
-        # Create new user (without authentication)
-        cursor.execute("INSERT INTO users (name, is_authenticated) VALUES (%s, FALSE)", (name,))
+        # Create new user in users_login table
+        cursor.execute("INSERT INTO users_login (name, email, password_hash, is_authenticated) VALUES (%s, %s, %s, FALSE)", 
+                      (name, f"{name}@example.com", "temporary"))
         conn.commit()
         user_id = cursor.lastrowid
         logger.debug(f"Created new user with id: {user_id}")
@@ -273,7 +286,7 @@ async def login_page(request: Request, error: str = None):
     # Check if user is already logged in
     current_user = await get_current_user(request, DB_CONFIG)
     
-    if current_user:
+    if (current_user):
         # If already logged in, redirect to their page
         return RedirectResponse(url=f"/user/{current_user['name']}", status_code=303)
     
@@ -465,10 +478,18 @@ async def update_content(
     try:
         cursor = conn.cursor(dictionary=True)
         
-        # Get user id
-        cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
+        # Get user id from users_login
+        cursor.execute("SELECT id FROM users_login WHERE name = %s", (name,))
         user = cursor.fetchone()
         
+        if not user:
+            # Try legacy users table as fallback
+            try:
+                cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
+                user = cursor.fetchone()
+            except Exception:
+                pass
+                
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
