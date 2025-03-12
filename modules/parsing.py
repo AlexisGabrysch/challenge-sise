@@ -20,10 +20,48 @@ uploaded_pdf = client.files.upload(
 )  
 signed_url = client.files.get_signed_url(file_id=uploaded_pdf.id,expiry=1)
 
-pdf_response = client.ocr.process(document=DocumentURLChunk(document_url=signed_url.url),model="mistral-ocr-latest",include_image_base64=True,image_limit=0,
-image_min_size=0)
+pdf_response = client.ocr.process(document=DocumentURLChunk(document_url=signed_url.url),model="mistral-ocr-latest",include_image_base64=True)
 
-response_dict = json.loads(pdf_response.json())
+# print(pdf_response.pages[0].markdown)
+
+
+# response_dict = json.loads(pdf_response.model_dump_json())
+# json_string = json.dumps(response_dict, indent=4)
+
+# pages = response_dict.get("pages", [])
+# for page in pages:
+#     markdown_content = "\n\n".join(page.get("markdown", "") for page in pages)
+#     print(markdown_content)
+
+
+all_markdown_content = "\n\n".join(page.markdown for page in pdf_response.pages)
+
+import time
+
+max_retries = 5
+retry_delay = 1
+
+for attempt in range(max_retries):
+    try:
+        chat_response = client.chat.complete(
+            model="ministral-8b-latest",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "This is pdf's OCR in markdown format :\n<BEGIN_PDF_OCR>\n" + all_markdown_content + "\n<END_PDF_OCR>\n convert this into a sensible structured json response. The output should be strictly json with no extra commentary",
+                },
+            ],
+            response_format={"type": "json_object"},
+            temperature=0
+        )
+        break
+    except models.SDKError as e:
+        if e.status_code == 429 and attempt < max_retries - 1:
+            time.sleep(retry_delay)
+            retry_delay *= 2
+        else:
+            raise
+
+response_dict = json.loads(chat_response.choices[0].message.content)
 json_string = json.dumps(response_dict, indent=4)
-
 print(json_string)
