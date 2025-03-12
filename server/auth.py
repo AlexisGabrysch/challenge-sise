@@ -48,14 +48,14 @@ def create_user(db_config: dict, name: str, email: str, password: str) -> int:
         cursor = conn.cursor(dictionary=True)
         
         # Check if user exists by email
-        cursor.execute("SELECT id FROM users_login WHERE email = %s", (email,))
+        cursor.execute("SELECT id FROM users_login_bis WHERE email = %s", (email,))
         user = cursor.fetchone()
         
         if user:
             raise HTTPException(status_code=400, detail="Email already registered")
             
         # Check if name exists
-        cursor.execute("SELECT id FROM users_login WHERE name = %s", (name,))
+        cursor.execute("SELECT id FROM users_login_bis WHERE name = %s", (name,))
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="Username already taken")
         
@@ -63,7 +63,7 @@ def create_user(db_config: dict, name: str, email: str, password: str) -> int:
         password_hash = hash_password(password)
         
         # Create new user
-        cursor.execute("INSERT INTO users_login (name, email, password_hash, is_authenticated) VALUES (%s, %s, %s, TRUE)", 
+        cursor.execute("INSERT INTO users_login_bis (name, email, password_hash, is_authenticated) VALUES (%s, %s, %s, TRUE)", 
                        (name, email, password_hash))
         conn.commit()
         user_id = cursor.lastrowid
@@ -82,7 +82,7 @@ def authenticate_user(db_config: dict, email: str, password: str) -> Optional[di
         cursor = conn.cursor(dictionary=True)
         
         # Get user by email
-        cursor.execute("SELECT id, name, email, password_hash FROM users_login WHERE email = %s", (email,))
+        cursor.execute("SELECT id, name, email, password_hash FROM users_login_bis WHERE email = %s", (email,))
         user = cursor.fetchone()
         
         if not user or not verify_password(user["password_hash"], password):
@@ -136,7 +136,7 @@ def get_user_from_session(db_config: dict, session_token: str) -> Optional[dict]
         cursor.execute("""
             SELECT u.id, u.name, u.email, s.expires_at 
             FROM sessions s
-            JOIN users_login u ON s.user_id = u.id
+            JOIN users_login_bis u ON s.user_id = u.id
             WHERE s.session_token = %s
         """, (session_token,))
         

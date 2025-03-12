@@ -71,15 +71,15 @@ def get_or_create_user(name: str):
     try:
         cursor = conn.cursor(dictionary=True)
         
-        # Check if user exists in users_login table first
-        cursor.execute("SELECT id FROM users_login WHERE name = %s", (name,))
+        # Check if user exists in users_login_bis table first
+        cursor.execute("SELECT id FROM users_login_bis WHERE name = %s", (name,))
         user = cursor.fetchone()
         
         if user:
-            logger.debug(f"Found existing user in users_login with id: {user['id']}")
+            logger.debug(f"Found existing user in users_login_bis with id: {user['id']}")
             return user["id"]
             
-        # If not found in users_login, check the legacy users table if it exists
+        # If not found in users_login_bis, check the legacy users table if it exists
         try:
             cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
             user = cursor.fetchone()
@@ -91,8 +91,8 @@ def get_or_create_user(name: str):
             # Table might not exist, ignore this error
             logger.debug(f"Could not check users table: {e}")
         
-        # Create new user in users_login table
-        cursor.execute("INSERT INTO users_login (name, email, password_hash, is_authenticated) VALUES (%s, %s, %s, FALSE)", 
+        # Create new user in users_login_bis table
+        cursor.execute("INSERT INTO users_login_bis (name, email, password_hash, is_authenticated) VALUES (%s, %s, %s, FALSE)", 
                       (name, f"{name}@example.com", "temporary"))
         conn.commit()
         user_id = cursor.lastrowid
@@ -116,7 +116,7 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
         
         # Check if content exists
         cursor.execute(
-            "SELECT id, content FROM users_content WHERE user_id = %s AND section_name = %s",
+            "SELECT id, content FROM users_content_bis WHERE user_id = %s AND section_name = %s",
             (user_id, section_name)
         )
         content = cursor.fetchone()
@@ -126,7 +126,7 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
         
         # Create default content
         cursor.execute(
-            "INSERT INTO users_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+            "INSERT INTO users_content_bis (user_id, section_name, content) VALUES (%s, %s, %s)",
             (user_id, section_name, default_content)
         )
         conn.commit()
@@ -286,7 +286,7 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
         # Try to update existing content
         cursor.execute(
             """
-            UPDATE users_content 
+            UPDATE users_content_bis 
             SET content = %s, last_updated = CURRENT_TIMESTAMP 
             WHERE user_id = %s AND section_name = %s
             """,
@@ -297,7 +297,7 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
         if cursor.rowcount == 0:
             # If no rows were updated, insert new content
             cursor.execute(
-                "INSERT INTO users_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+                "INSERT INTO users_content_bis (user_id, section_name, content) VALUES (%s, %s, %s)",
                 (user_id, update_data.section, update_data.content)
             )
         
@@ -539,8 +539,8 @@ async def update_content(
     try:
         cursor = conn.cursor(dictionary=True)
         
-        # Get user id from users_login
-        cursor.execute("SELECT id FROM users_login WHERE name = %s", (name,))
+        # Get user id from users_login_bis
+        cursor.execute("SELECT id FROM users_login_bis WHERE name = %s", (name,))
         user = cursor.fetchone()
         
         if not user:
@@ -559,7 +559,7 @@ async def update_content(
         # Try to update existing content
         cursor.execute(
             """
-            UPDATE users_content 
+            UPDATE users_content_bis 
             SET content = %s, last_updated = CURRENT_TIMESTAMP 
             WHERE user_id = %s AND section_name = %s
             """,
@@ -570,7 +570,7 @@ async def update_content(
         if cursor.rowcount == 0:
             # If no rows were updated, insert new content
             cursor.execute(
-                "INSERT INTO users_content (user_id, section_name, content) VALUES (%s, %s, %s)",
+                "INSERT INTO users_content_bis (user_id, section_name, content) VALUES (%s, %s, %s)",
                 (user_id, section, content)
             )
         
