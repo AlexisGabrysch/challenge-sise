@@ -10,11 +10,11 @@ def get_api_url():
         return "https://challenge-sise-production.up.railway.app"
     else:
         # Local development
-        return "http://localhost:8000"
+        return "https://challenge-sise-production.up.railway.app:8000"
 
 # Get the Streamlit URL from environment or use deployed URL
 def get_streamlit_url():
-    return os.getenv("STREAMLIT_URL", "https://challenge-sise-fhnm3twfkndvfhhybh8f7w.streamlit.app")
+    return os.getenv("STREAMLIT_URL", "https://challenge-sise-production.up.railway.app/")
 
 def main():
     # Check if we are on a user page
