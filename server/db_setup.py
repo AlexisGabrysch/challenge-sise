@@ -1,4 +1,17 @@
 from connection import connect_to_mysql, execute_query, close_connection
+import hashlib
+import os
+
+def hash_password(password):
+    """Hash a password for storing"""
+    salt = os.urandom(32)  # A new salt for this user
+    key = hashlib.pbkdf2_hmac(
+        'sha256',
+        password.encode('utf-8'),
+        salt,
+        100000,  # number of iterations
+    )
+    return salt.hex() + ':' + key.hex()
 
 def setup_database():
     """
@@ -18,11 +31,14 @@ def setup_database():
     
     if conn:
         try:
-            # Create users table
+            # Create users table with authentication fields
             execute_query(conn, '''
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255) UNIQUE,
+                password_hash VARCHAR(255),
+                is_authenticated BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             ''')
@@ -37,6 +53,18 @@ def setup_database():
                 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id),
                 UNIQUE(user_id, section_name)
+            )
+            ''')
+
+            # Create sessions table
+            execute_query(conn, '''
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                session_token VARCHAR(255) NOT NULL UNIQUE,
+                expires_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
             ''')
             

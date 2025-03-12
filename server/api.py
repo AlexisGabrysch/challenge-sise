@@ -1,14 +1,19 @@
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBasic
 import uvicorn
 import os
 import logging
 from typing import Dict, Any, Optional
 from connection import connect_to_mysql, execute_query, close_connection
 from db_setup import setup_database
+from auth import (
+    authenticate_user, create_user, create_session, 
+    get_user_from_session, is_page_owner, get_current_user
+)
 
 # Configuration du logging
 logging.basicConfig(
@@ -36,6 +41,8 @@ os.makedirs("static", exist_ok=True)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+security = HTTPBasic()
+
 # MySQL connection configuration
 DB_CONFIG = {
     'host': 'maglev.proxy.rlwy.net',
@@ -45,7 +52,7 @@ DB_CONFIG = {
     'port': 40146
 }
 
-# URLs for redirects - Ne pas utiliser ici car cause des problèmes de redirection interne
+# URLs for redirects
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
 logger.debug(f"SERVER_URL: {SERVER_URL}")
@@ -68,8 +75,8 @@ def get_or_create_user(name: str):
             logger.debug(f"Found existing user with id: {user['id']}")
             return user["id"]
         
-        # Create new user
-        cursor.execute("INSERT INTO users (name) VALUES (%s)", (name,))
+        # Create new user (without authentication)
+        cursor.execute("INSERT INTO users (name, is_authenticated) VALUES (%s, FALSE)", (name,))
         conn.commit()
         user_id = cursor.lastrowid
         logger.debug(f"Created new user with id: {user_id}")
@@ -114,59 +121,129 @@ def get_or_create_content(user_id: int, section_name: str, default_content: str 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     logger.debug("Root endpoint accessed")
-    # Au lieu de rediriger, afficher une page d'accueil simple
-    html_content = """
-    <html>
-        <head>
-            <title>Personal Pages API</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background-color: #f5f5f5;
-                    text-align: center;
-                }
-                .container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    background-color: white;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                }
-                h1 {
-                    color: #FF4B4B;
-                }
-                p {
-                    line-height: 1.6;
-                }
-                .btn {
-                    display: inline-block;
-                    padding: 10px 20px;
-                    margin: 10px;
-                    background-color: #4CAF50;
-                    color: white;
-                    border-radius: 5px;
-                    text-decoration: none;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Welcome to Personal Pages API</h1>
-                <p>This API allows you to create and manage personal pages with customizable content.</p>
-                <p>To view a user's page, use the following URL pattern:</p>
-                <code>/user/{name}</code>
-                <p>Example:</p>
-                <a href="/user/alexis" class="btn">View Alexis' Page</a>
-                <p>You can test the API's health by visiting:</p>
-                <a href="/test" class="btn">Test API</a>
-            </div>
-        </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+    # Redirecting to login page
+    return RedirectResponse(url="/login", status_code=303)
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, error: str = None):
+    logger.debug("Login page accessed")
+    
+    # Check if user is already logged in
+    current_user = await get_current_user(request, DB_CONFIG)
+    
+    if current_user:
+        # If already logged in, redirect to their page
+        return RedirectResponse(url=f"/user/{current_user['name']}", status_code=303)
+    
+    return templates.TemplateResponse(
+        "login.html", 
+        {
+            "request": request,
+            "error": error
+        }
+    )
+
+@app.post("/login", response_class=RedirectResponse)
+async def login(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    logger.debug("Login attempt")
+    
+    # Authenticate user
+    user = authenticate_user(DB_CONFIG, email, password)
+    
+    if not user:
+        logger.debug("Login failed")
+        return RedirectResponse(url="/login?error=Invalid+email+or+password", status_code=303)
+    
+    # Create session
+    session_token = create_session(DB_CONFIG, user["id"])
+    
+    # Create response with redirect
+    response = RedirectResponse(url=f"/user/{user['name']}", status_code=303)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=30*24*60*60,  # 30 days
+        path="/"
+    )
+    
+    return response
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request, error: str = None):
+    logger.debug("Register page accessed")
+    
+    # Check if user is already logged in
+    current_user = await get_current_user(request, DB_CONFIG)
+    
+    if current_user:
+        # If already logged in, redirect to their page
+        return RedirectResponse(url=f"/user/{current_user['name']}", status_code=303)
+    
+    return templates.TemplateResponse(
+        "register.html", 
+        {
+            "request": request,
+            "error": error
+        }
+    )
+
+@app.post("/register", response_class=RedirectResponse)
+async def register(
+    request: Request,
+    name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...)
+):
+    logger.debug("Register attempt")
+    
+    # Validate passwords match
+    if password != password_confirm:
+        return RedirectResponse(url="/register?error=Passwords+do+not+match", status_code=303)
+    
+    try:
+        # Create user
+        user_id = create_user(DB_CONFIG, name, email, password)
+        
+        # Create session
+        session_token = create_session(DB_CONFIG, user_id)
+        
+        # Create response with redirect
+        response = RedirectResponse(url=f"/user/{name}", status_code=303)
+        
+        # Set cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            max_age=30*24*60*60,  # 30 days
+            path="/"
+        )
+        
+        return response
+    
+    except HTTPException as e:
+        error_message = e.detail.replace(" ", "+")
+        return RedirectResponse(url=f"/register?error={error_message}", status_code=303)
+
+@app.get("/logout", response_class=RedirectResponse)
+async def logout():
+    logger.debug("Logout")
+    
+    # Create response with redirect to login page
+    response = RedirectResponse(url="/login", status_code=303)
+    
+    # Clear the cookie
+    response.delete_cookie(key="session_token", path="/")
+    
+    return response
 
 # Test endpoint
 @app.get("/test", response_class=HTMLResponse)
@@ -198,6 +275,13 @@ async def user_page(request: Request, name: str):
             "Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper."
         )
         
+        # Check if current user is the owner of the page
+        session_token = request.cookies.get("session_token")
+        is_owner = False
+        
+        if session_token:
+            is_owner = is_page_owner(DB_CONFIG, session_token, name)
+        
         return templates.TemplateResponse(
             "user_template.html", 
             {
@@ -206,7 +290,9 @@ async def user_page(request: Request, name: str):
                 "header": header_content,
                 "section1": section1_content, 
                 "section2": section2_content,
-                "client_url": SERVER_URL  # Utilisez SERVER_URL comme page de retour
+                "client_url": SERVER_URL,
+                "is_owner": is_owner,
+                "logged_in": session_token is not None
             }
         )
     except Exception as e:
@@ -223,6 +309,13 @@ async def update_content(
     content: str = Form(...)
 ):
     logger.debug(f"Update content for user: {name}, section: {section}")
+    
+    # Check authorization - only page owner can update
+    session_token = request.cookies.get("session_token")
+    
+    if not session_token or not is_page_owner(DB_CONFIG, session_token, name):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
+    
     conn = connect_to_mysql(**DB_CONFIG)
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection error")
