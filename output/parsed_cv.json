@@ -1,108 +1,65 @@
 {
-    "first_name": "AKREM",
-    "last_name": "JOMAA",
-    "email": "akremjomaa@univ-lyon2.fr",
-    "phone": "33750712515",
-    "address": "Lyon, FRANCE",
-    "driving_license": "B",
-    "education": [
-        {
-            "year": 2023,
-            "school": "Institut de la Communication, Université de Lumière Lyon 2",
-            "degree": "Master Statistique et Informatique pour la Science des données (SISE)",
-            "details": "Modules pertinents: Analyse Statistique, Biostatistique, Machine Learning (ML), Deep Learning, Natural Language Processing (NLP), LLM, Data Mining, Computer Vision, MLOps, Systèmes d'informations décisionnels, Data Warehousing, Dataviz, Cloud, Big Data, Base de données SQL, Base de données NoSQL, Conception agile de projets informatiques, séries temporelles."
-        },
-        {
-            "year": 2022,
-            "school": "Institut Universitaire de Technologie NANCY-CHARLEMAGNE",
-            "degree": "Licence Professionnelle Conception-Intégration d'Applications et Services Web pour l'Entreprise (CIASIE)",
-            "details": "Modules pertinents : Développement d'applications client web, Développement services web, Conception pour le web, Technologies du web pour la mobilité, Administration et sécurité des serveurs/services web, Administration et outils systèmes pour la virtualisation."
-        },
-        {
-            "year": 2019,
-            "school": "Institut Supérieur des Sciences Appliquées et de Technologie de Sousse",
-            "degree": "Licence en Ingéniérie des Systèmes de l'Informatique",
-            "details": "Modules pertinents: Méthodologie génie logiciel, Base des Données Avancées, IA et Machine learning, Big Data, Sécurité, Probabilité et statistique."
-        }
-    ],
-    "work_experience": [
-        {
-            "job_title": "Développeur web back-end",
-            "company": "Beegift",
-            "duration": "Avril 2023 - juillet 2023",
-            "description": "Mise en oeuvre d'un microservice pour la gestion des E-mails. Mise en oeuvre d'un microservice pour la gestion des chèques cadeaux. Outils utilisés : Laravel 10, Brevo, Amazon S3, Docker, Github, Trello, Postman."
-        },
-        {
-            "job_title": "Data Scientist",
-            "company": "Laboratoire Jean Kuntzmann (LJK)",
-            "duration": "Mai - juillet 2024",
-            "description": "Collecte de pétitions en ligne au Royaume-Uni à partir de Change.org en utilisant des techniques de web scraping et de web crawling. Prétraitement et analyse statistique des pétitions collectées. Mise en œuvre d'un modèle de machine learning pour prédire les thématiques à partir des descriptions des pétitions. Outils utilisés : Python, pandas, scikit-learn, NLTK, Selenium, R, dplyr, ggplot2, tidyr, Trello, Github."
-        }
-    ],
-    "projects": [
-        {
-            "title": "GreenTech Solutions - Analyse et prédiction de la performance énergétique des bâtiments",
-            "type": "Academic",
-            "description": "Développement d'une application interactive avec Dash pour analyser les Diagnostics de Performance Énergétique (DPE) des bâtiments du Rhône (69). Conception de modèles de classification et de régression pour prédire les étiquettes DPE et la consommation énergétique.",
-            "technologies_used": [
-                "Python",
-                "Scikit-learn",
-                "Plotly",
-                "Dash",
-                "Pandas",
-                "NumPy",
-                "GitHub"
-            ]
-        },
-        {
-            "title": "L'Observatoire des Saveurs Lyonnaises - Analyse des restaurants lyonnais",
-            "type": "Academic",
-            "description": "Développement d'une application interactive avec Streamlit pour analyser les données des restaurants lyonnais extraites de TripAdvisor via des techniques de web scraping. Réalisation d'analyses NLP pour explorer les sentiments des avis clients et génération de résumés automatiques grâce à un modèle de langage (LLM).",
-            "technologies_used": [
-                "Python",
-                "BeautifulSoup",
-                "Streamlit",
-                "Pandas",
-                "Plotly",
-                "Docker",
-                "GitHub"
-            ]
-        }
-    ],
-    "languages": {
-        "Français": "Compétence professionnelle",
-        "Anglais": "Compétence professionnelle"
+    "name": "Maxence LIQGIER",
+    "address": "A Lyon",
+    "phone": "+33698069771",
+    "email": "maxence.liogier@univ-lyon2.fr",
+    "email2": "maxence.liogier38@gmail.com",
+    "driver_license": "Permis de conduire",
+    "skills": {
+        "informatique": [
+            "Pack Office",
+            "Python",
+            "R",
+            "QGIS",
+            "SQL",
+            "Matlab"
+        ],
+        "languages": [
+            "Anglais",
+            "Espagnol"
+        ],
+        "first_aid": "PSC1 obtenu en 2022"
     },
-    "skills": [
-        "Python",
-        "Excel",
-        "R",
-        "SAS",
-        "PySpark",
-        "Knime",
-        "Scikit-learn",
-        "PyTorch",
-        "Microsoft Power BI",
-        "Qlik",
-        "Tableau",
-        "Talend",
-        "Snowflake",
-        "Azure Data Factory",
-        "Docker",
-        "GIT",
-        "Agile",
-        "SQL",
-        "NOSQL",
-        "Shiny",
-        "Dash",
-        "Streamlit",
-        "MERN Stack",
-        "ASP",
-        "Net Core",
-        "Laravel"
+    "activities": [
+        "Cinéma",
+        "Echecs",
+        "Piano",
+        "Course à pied"
     ],
-    "certifications": [
-        "Oracle Cloud Infrastructure 2023 Al Certified Foundations Associate: Oracle AI services, Oracle ML services, AI fundamental concepts, Machine Learning and Deep Learning concepts and terminologies, Oracle Generative AI",
-        "Certification Pix"
+    "education": {
+        "univ_lyon2": {
+            "2024-2025": "Master 2 SISE (Statistique et Informatique pour la Science des Données)",
+            "2023-2024": "Master 2 TRT (Transport Réseaux Territoire) Economie des transports"
+        },
+        "entpe": {
+            "2021-2024": "Diplôme d'Ingénieur d'Aménagement des Territoires spécialisé dans les Transports"
+        },
+        "lycee_claude_fauriel": {
+            "2019-2021": "Classe Préparatoire PCSI puis PC*"
+        }
+    },
+    "experiences": [
+        {
+            "company": "Setec International",
+            "duration": "Avril - Août 2024",
+            "role": "Travail de fin d'études",
+            "description": "Mémoire sur l'optimisation des matrices Origine-Destination issues des données de téléphonie mobile (Flux Vision)",
+            "competences": [
+                "Maitrise du traitement des données de téléphonie mobile de mobilité",
+                "Renforcement sur Python",
+                "Méthode Agile/Scrum"
+            ]
+        },
+        {
+            "company": "Bruxelles Mobilité",
+            "duration": "Avril - Août 2023",
+            "role": "Stage de deuxième année d'école d'ingénieur",
+            "description": "Travaux sur la ville des courtes distances ainsi que sur les questions d'accessibilité en ville",
+            "competences": [
+                "Manipulation de lourdes bases de données : floating mobile data",
+                "Renforcement sur R et QGIS",
+                "Appréhension des enjeux entourant la mobilité"
+            ]
+        }
     ]
 }
