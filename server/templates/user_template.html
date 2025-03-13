@@ -480,7 +480,11 @@
             </div>
             {% if cv.image_base64 %}
             <div class="profile-image-container">
+                {% if cv.image_base64.startswith('data:') %}
+                <img src="{{ cv.image_base64 }}" alt="Photo de profil" class="profile-image">
+                {% else %}
                 <img src="data:image/jpeg;base64,{{ cv.image_base64 }}" alt="Photo de profil" class="profile-image">
+                {% endif %}
             </div>
             {% endif %}
             <div class="edit-form" id="header-form">
