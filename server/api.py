@@ -377,7 +377,6 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
 
 
 
-
 @app.post("/api/cv/{name}/upload")
 async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
     """API endpoint for uploading and processing a CV file"""
@@ -408,12 +407,14 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
     try:
         file_extension = file.filename.split('.')[-1].lower()
         ocr_text_original, ocr_text_clean = "", ""
+        first_image = None
 
         if file_extension == 'pdf':
             cleaned_pdf_path = f"{temp_path}_cleaned.pdf"
 
             # Remove background for B&W version
             remove_background_from_pdf(temp_path, cleaned_pdf_path)
+            
             try:
                 # Extract text from original PDF
                 ocr_result_original = extract_text_and_first_image_from_pdf(temp_path, user["email"])
@@ -425,18 +426,55 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
                 ocr_text_original = ""
                 first_image = None
 
-
-
-
-
-            # Extract text from cleaned B&W PDF
-            ocr_text_clean = extract_text_from_pdf(cleaned_pdf_path)
-
+            try:
+                # Extract text from cleaned B&W PDF
+                ocr_text_clean = extract_text_from_pdf(cleaned_pdf_path)
+            except Exception as e:
+                logger.error(f"Error extracting OCR from cleaned PDF: {e}")
+                ocr_text_clean = ""
+            
+            # If both extraction methods failed, convert PDF to image and try again
+            if not ocr_text_original and not ocr_text_clean:
+                logger.info("Both PDF extraction methods failed. Converting PDF to image for OCR...")
+                try:
+                    from pdf2image import convert_from_path
+                    import tempfile
+                    
+                    # Convert PDF to images
+                    with tempfile.TemporaryDirectory() as path:
+                        images = convert_from_path(temp_path, output_folder=path)
+                        if images:
+                            # Save first page as image
+                            img_path = f"{path}/page_0.jpg"
+                            images[0].save(img_path, 'JPEG')
+                            
+                            # Extract text from the image
+                            ocr_text_original = extract_text_from_image(img_path)
+                            
+                            # Get image as base64 for profile picture
+                            if not first_image:
+                                import base64
+                                with open(img_path, "rb") as img_file:
+                                    first_image = base64.b64encode(img_file.read()).decode('utf-8')
+                except Exception as e:
+                    logger.error(f"Error extracting OCR from PDF converted to image: {e}")
+            
             # Clean up temporary cleaned PDF
-            os.unlink(cleaned_pdf_path)
+            try:
+                os.unlink(cleaned_pdf_path)
+            except:
+                pass
 
         elif file_extension in ['jpg', 'jpeg', 'png']:
-            ocr_text_original = extract_text_from_image(temp_path)
+            try:
+                ocr_text_original = extract_text_from_image(temp_path)
+                
+                # For image files, convert the image to base64 for profile picture
+                with open(temp_path, "rb") as image_file:
+                    import base64
+                    first_image = base64.b64encode(image_file.read()).decode('utf-8')
+            except Exception as e:
+                logger.error(f"Error extracting OCR from image: {e}")
         
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format")
@@ -458,7 +496,14 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             try:
                 logger.debug(f"Attempt {attempt+1}/{max_retries} to process CV with LLM")
                 cv_data = structure_cv_json(text_total)
-                cv_data["image"] = first_image  # Store the first image found
+                
+                # Store the image in the CV data
+                if first_image:
+                    if isinstance(first_image, dict) and "image_base64" in first_image:
+                        cv_data["image_base64"] = first_image["image_base64"]
+                    else:
+                        cv_data["image_base64"] = first_image
+                
                 break  # Success, exit retry loop
             except Exception as e:
                 if "429" in str(e) and attempt < max_retries - 1:
@@ -477,7 +522,6 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             cv_data = {
                 "user_id": ObjectId(user_id),
                 "sections": cv_data,
-
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
@@ -505,8 +549,10 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
     
     finally:
         # Clean up the temporary file
-        os.unlink(temp_path)
-
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
 
 
 @app.delete("/api/cv/{name}/delete")
