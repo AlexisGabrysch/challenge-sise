@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le code de l'application et les templates
 COPY *.py .
 COPY templates/ templates/
+COPY modules/ modules/
 RUN mkdir -p static
 
 # Variables d'environnement pour Railway
