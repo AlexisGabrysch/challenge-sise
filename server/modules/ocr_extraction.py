@@ -3,7 +3,14 @@ import json
 from mistralai import Mistral
 from mistralai import DocumentURLChunk, ImageURLChunk, TextChunk
 from pathlib import Path
-from .config import API_KEY
+from .config import API_KEY,MONGO_URI
+
+from pymongo import MongoClient
+
+# 📌 Configuration MongoDB
+client = MongoClient(MONGO_URI)
+db = client["Challenge_SISE"]
+collection_cvs = db["cvs"]
 
 # 📌 Clé API Mistral
 def extract_text_and_first_image_from_pdf(pdf_path: str, user_email: str) -> dict:
@@ -56,7 +63,6 @@ def extract_text_and_first_image_from_pdf(pdf_path: str, user_email: str) -> dic
 
     return {"markdown": all_markdown_content, "image": first_image}
 
-
 def extract_text_from_pdf(pdf_path: str) -> str:
     """
     Envoie un PDF à Mistral OCR et récupère le texte en format Markdown.
@@ -90,6 +96,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     all_markdown_content = "\n\n".join(page.markdown for page in pdf_response.pages)
 
     return all_markdown_content
+
 
 def extract_text_from_image(image_path: str) -> str:
     """

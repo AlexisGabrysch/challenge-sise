@@ -460,6 +460,10 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
     finally:
         # Clean up the temporary file
         os.unlink(temp_path)
+
+
+
+        
 @app.delete("/api/cv/{name}/delete")
 async def api_delete_cv(name: str, authorization: str = Header(None)):
     """API endpoint pour supprimer un CV"""
