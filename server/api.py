@@ -16,9 +16,11 @@ from datetime import datetime, timedelta
 import secrets
 import tempfile
 import json
-from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image , extract_text_and_first_image_from_pdf
-from modules.llm_structuring import structure_cv_json
+
 from modules.pdf_preprocessing import remove_background_from_pdf
+from modules.ocr_extraction import extract_text_and_first_image_from_pdf, extract_text_from_pdf, extract_text_from_image
+from modules.llm_structuring import structure_cv_json
+from modules.cv_utils import add_cv_to_user
 
 
 # Classes pour validation
@@ -373,10 +375,13 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
     
     return {"status": "success"}
 
+
+
+
+
 @app.post("/api/cv/{name}/upload")
 async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
     """API endpoint for uploading and processing a CV file"""
-    logger.debug(f"API Upload CV: {name}")
     
     # Extract session token from Authorization header
     session_token = None
@@ -393,39 +398,50 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
         raise HTTPException(status_code=404, detail="User not found")
     
     user_id = str(user["_id"])
-    
+
     # Save the file temporarily
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file.filename.split('.')[-1].lower()}") as temp_file:
         contents = await file.read()
         temp_file.write(contents)
         temp_path = temp_file.name
-    text_noir_blanc = ""
-    text_original = ""
+
     try:
-        # Extract text based on file type
         file_extension = file.filename.split('.')[-1].lower()
-        
-        if file_extension in ['pdf']:
-            # Create a temporary file for the cleaned PDF
+        ocr_text_original, ocr_text_clean = "", ""
+
+        if file_extension == 'pdf':
             cleaned_pdf_path = f"{temp_path}_cleaned.pdf"
-            
-            # Remove background from PDF to improve OCR quality
+
+            # Remove background for B&W version
             remove_background_from_pdf(temp_path, cleaned_pdf_path)
+
+            # Extract text from original PDF
+            ocr_result_original = extract_text_and_first_image_from_pdf(temp_path, user["email"])
+            ocr_text_original = ocr_result_original["markdown"]
             
-            # Extract text from the cleaned PDF
-            text_noir_blanc = extract_text_from_pdf(cleaned_pdf_path)
-            
-            # Clean up the cleaned PDF file
+            # Extract text from cleaned B&W PDF
+            ocr_text_clean = extract_text_from_pdf(cleaned_pdf_path)
+
+            # Clean up temporary cleaned PDF
             os.unlink(cleaned_pdf_path)
+
         elif file_extension in ['jpg', 'jpeg', 'png']:
-            text_original = extract_text_from_image(temp_path)
+            ocr_text_original = extract_text_from_image(temp_path)
+        
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format")
-        
 
+        # Combine texts from both versions
+        text_total = f"""
+        --- OCR FROM ORIGINAL PDF ---
+        {ocr_text_original}
+
+        --- OCR FROM CLEANED PDF ---
+        {ocr_text_clean}
+        """
 
         # Structure CV data with LLM
-        cv_data = structure_cv_json(text_original , text_noir_blanc)
+        cv_data = structure_cv_json(text_total)
         
         # Update CV sections with extracted data
         cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})
@@ -463,7 +479,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
 
 
 
-        
+
 @app.delete("/api/cv/{name}/delete")
 async def api_delete_cv(name: str, authorization: str = Header(None)):
     """API endpoint pour supprimer un CV"""
