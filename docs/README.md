@@ -31,13 +31,13 @@ Si vous souhaitez exécuter l’application en local :
 
 ### 1️) Cloner le dépôt  
 ```bash
-git clone https://github.com/votre-repo.git
+git clone https://github.com/AlexisGabrysch/challenge-sise
 cd votre-repo
 ```
 
 ### 2) Construire l’image Docker
 ```bash
-docker build -t cv-web-generator .
+docker build -t cvvision .
 ```
 
 ### 3) Lancer le conteneur
