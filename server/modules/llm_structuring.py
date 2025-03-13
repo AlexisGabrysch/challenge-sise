@@ -28,45 +28,43 @@ The OCR was performed on two versions of the document:
 - **Original PDF** (captures normal text)
 - **Processed PDF (Black & White)** (captures text that may be hidden due to background colors)
 
-<BEGIN_PDF_OCR>
+<BEGIN_Original PDF>
 {ocr_text_original}
-<END_PDF_OCR>
+<END_Original PDF>
 
-<BEGIN_PDF_OCR>
+<BEGIN_Black & White PDF>
 {ocr_text_baw}
-<END_PDF_OCR>
+<END_Black & White PDF>
 ### Task:
-Convert this into a well-structured JSON response following the exact schema below.  
-Ensure all extracted information is accurate, well-formatted, and **free of redundancy**.  
-If a field is missing or not found in the text, **leave it empty** but **do not fabricate data**.
+Convert this into a well-structured JSON response following the exemple schema key, value below.  
+All keys must be present in the JSON response, even if the value is None.
+If a field is missing or not found in the text (e.g., 'email', 'phone', 'address'), the value is None.
 determine their most appropriate title (e.g., 'Master’s Student in Data Science', 'AI Researcher', 'Professor', etc.).
-If a specific title is not provided, infer the best possible one based on their education, experience, and skills. 
-Ensure the title is professional, relevant to their field, and aligns with common industry terminology
-For the summary, extract the most relevant professional summary or objective statement from the text. 
-If none is available, generate a concise two-line summary that effectively highlights their expertise and career objectives.
+If a specific title is not provided, the value is None. 
+For the summary, extract the most relevant professional summary or objective statement from the text in french. 
 
 ### Expected JSON Structure:
 {{
-    "first_name": "Candidate's first name (if available)",
-    "last_name": "Candidate's last name (if available)",
-    "email": "Candidate's email (if available)",
-    "phone": "Candidate's phone number (if available)",
-    "address": "Full postal address (if available)",
-    "title": "Professional title (e.g., 'Data Scientist', 'Software Engineer')",
-    "summary": "Professional summary or objective",
-    "driving_license": "Type of driving license (if mentioned, else empty)",
+    "first_name": Value,
+    "last_name": Value,
+    "email": Value,
+    "phone": Value,
+    "address": "Value,
+    "title": Value,
+    "summary": Value,
+    "driving_license": Value,
     "education": [
         {{
-            "year": 2020,
-            "school": "University/School Name",
-            "degree": "Degree obtained",
-            "details": "Additional details (e.g., specialization, honors) (if available)"
+            "year": Value,
+            "school": Value,
+            "degree": Value,
+            "details": Value
         }}
     ],
     "work_experience": [
         {{
-            "job_title": "Job title",
-            "company": "Company name",
+            "job_title": Value,
+            "company": Value,
             "duration": "Start - End date",
             "description": "Key responsibilities and achievements"
         }}
@@ -89,12 +87,11 @@ If none is available, generate a concise two-line summary that effectively highl
 }}
 
 ### Additional Instructions:
-1. **Do not invent or infer any missing information.** Extract only what is explicitly found in the OCR text.  
-2. **Avoid redundant entries.** If the same job, project, or skill appears multiple times, keep only one instance.  
-3. **Ensure the extracted text is formatted cleanly** (no extra spaces, unnecessary characters, or formatting errors).  
-4. **Use lists for multiple entries and maintain correct JSON formatting.**  
-5. **The output must be strictly a JSON object with no extra commentary or explanations.**  
-6. **If the same information appears in both OCR results (original and black & white), select the clearest version.**  
+1. **Do not invent or infer any missing information.** Extract only what is explicitly found in on of the OCR text.  
+2. **Ensure the extracted text is formatted cleanly** (no extra spaces, unnecessary characters, or formatting errors).  
+3. **Use lists for multiple entries and maintain correct JSON formatting.**  
+4. **The output must be strictly a JSON object with no extra commentary or explanations.**  
+5. **If the same information appears in both OCR results (original and black & white), select the clearest version.**  
 '''
 ,
                     },
