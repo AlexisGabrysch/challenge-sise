@@ -23,65 +23,69 @@ def structure_cv_json(ocr_text: str) -> dict:
                     {
                         "role": "user",
                         "content": f'''
-    This is the OCR-extracted text from a resume, formatted in Markdown:
-    <BEGIN_PDF_OCR>
-    {ocr_text}
-    <END_PDF_OCR>
+This is the OCR-extracted text from a resume, formatted in Markdown.  
+The OCR was performed on two versions of the document:  
+- **Original PDF** (captures normal text)
+- **Processed PDF (Black & White)** (captures text that may be hidden due to background colors)
 
-    Convert this into a well-structured JSON response following the exact schema below.  
-    Extract as much relevant information as possible from the resume.  
-    If any information is missing, leave the field empty but keep the structure intact.
+<BEGIN_PDF_OCR>
+{ocr_text}
+<END_PDF_OCR>
 
-    ### Expected JSON Structure:
-    {{
-        "first_name": "Candidate's first name",
-        "last_name": "Candidate's last name",
-        "email": "Candidate's email",
-        "phone": "Candidate's phone number",
-        "address": "Full postal address",
-        "driving_license": "Type of driving license (if mentioned, else empty)",
-        "education": [
-            {{
-                "year": 2020,
-                "school": "University/School Name",
-                "degree": "Degree obtained",
-                "details": "Additional details (e.g., specialization, honors)"
-            }}
-        ],
-        "work_experience": [
-            {{
-                "job_title": "Job title",
-                "company": "Company name",
-                "duration": "Start - End date",
-                "description": "Key responsibilities and achievements"
-            }}
-        ],
-        "projects": [
-            {{
-                "title": "Project title",
-                "type": "Academic | Volunteering | Association | Other",
-                "description": "Detailed description of the project",
-                "technologies_used": ["Tech1", "Tech2"] (if mentioned)
-            }}
-        ],
-        "hobbies": ["List of hobbies"],
-        "languages": {{
-            "Language1": "Proficiency level (e.g., Beginner, Intermediate, Fluent)",
-            "Language2": "Proficiency level"
-        }},
-        "skills": ["List of technical and soft skills"],
-        "certifications": ["List of certifications, if any"]
-    }}
+### Task:
+Convert this into a well-structured JSON response following the exact schema below.  
+Ensure all extracted information is accurate, well-formatted, and **free of redundancy**.  
+If a field is missing or not found in the text, **leave it empty** but **do not fabricate data**.
 
-    ### Additional Instructions:
-    1. **Extract all available information from the CV and match it to the correct fields.**  
-    2. **Group all project-related experiences under `projects`, whether academic, volunteering, or associative.**  
-    3. **Ensure that all extracted content is well-formatted and precise.**  
-    4. **If a field is not available, leave it empty but maintain the structure.**  
-    5. **Use lists for multiple entries and avoid duplicates.**  
+### Expected JSON Structure:
+{{
+    "first_name": "Candidate's first name (if available)",
+    "last_name": "Candidate's last name (if available)",
+    "email": "Candidate's email (if available)",
+    "phone": "Candidate's phone number (if available)",
+    "address": "Full postal address (if available)",
+    "driving_license": "Type of driving license (if mentioned, else empty)",
+    "education": [
+        {{
+            "year": 2020,
+            "school": "University/School Name",
+            "degree": "Degree obtained",
+            "details": "Additional details (e.g., specialization, honors) (if available)"
+        }}
+    ],
+    "work_experience": [
+        {{
+            "job_title": "Job title",
+            "company": "Company name",
+            "duration": "Start - End date",
+            "description": "Key responsibilities and achievements"
+        }}
+    ],
+    "projects": [
+        {{
+            "title": "Project title",
+            "type": "Academic | Volunteering | Association | Other",
+            "description": "Detailed description of the project (if available)",
+            "technologies_used": ["Tech1", "Tech2"] (if mentioned)
+        }}
+    ],
+    "hobbies": ["List of hobbies (if mentioned)"],
+    "languages": {{
+        "Language1": "Proficiency level (e.g., Beginner, Intermediate, Fluent)",
+        "Language2": "Proficiency level"
+    }},
+    "skills": ["List of technical and soft skills (if mentioned)"],
+    "certifications": ["List of certifications (if any)"]
+}}
 
-    The output **must** be a valid JSON object **with no extra commentary or explanations**.
-    '''
+### Additional Instructions:
+1. **Do not invent or infer any missing information.** Extract only what is explicitly found in the OCR text.  
+2. **Avoid redundant entries.** If the same job, project, or skill appears multiple times, keep only one instance.  
+3. **Ensure the extracted text is formatted cleanly** (no extra spaces, unnecessary characters, or formatting errors).  
+4. **Use lists for multiple entries and maintain correct JSON formatting.**  
+5. **The output must be strictly a JSON object with no extra commentary or explanations.**  
+6. **If the same information appears in both OCR results (original and black & white), select the clearest version.**  
+'''
 ,
                     },
                 ],
