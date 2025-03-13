@@ -7,7 +7,13 @@ from typing import Optional, Dict, Any
 import base64
 from datetime import datetime
 import time
-
+# Configuration pour la largeur complète
+st.set_page_config(
+    page_title="CV Manager",
+    page_icon="📄",
+    layout="wide",  # Utilise toute la largeur disponible
+    initial_sidebar_state="auto"
+)
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
@@ -617,285 +623,583 @@ def show_edit_cv():
         if st.button("View CV", key="view_cv_btn_edit"):
             st.session_state.page = PAGE_VIEW_CV
             st.rerun()
-
 def show_home_page():
-    """Page d'accueil moderne et business-orientée avec des composants Streamlit natifs"""
+    """Page d'accueil minimaliste avec couleurs pastel et design épuré"""
     
-    # CSS personnalisé pour améliorer l'apparence
-    st.markdown("""
-    <style>
-    .stApp {
-        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-        background-attachment: fixed;
-    }
-    
-    h1, h2, h3, p {
-        color: white;
-    }
-    
-    .hero-section {
-        text-align: center;
-        padding: 2rem;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(5px);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
-        margin-bottom: 2rem;
-    }
-    
-    .hero-title {
-        font-size: 3rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 1rem !important;
-        text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    .hero-subtitle {
-        font-size: 1.5rem !important;
-        margin-bottom: 1rem !important;
-    }
-    
-    .feature-card {
-        background: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        text-align: center;
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-10px);
-        transition: transform 0.3s ease;
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-    }
-    
-    .feature-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-    }
-    
-    .feature-title, .feature-text {
-        color: #333 !important;
-    }
-    
-    .feature-title {
-        font-size: 1.5rem !important;
-        font-weight: 600 !important;
-    }
-    
-    .stat-container {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(5px);
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 0.5rem !important;
-    }
-    
-    .testimonial-card {
-        background: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    }
-    
-    .testimonial-text {
-        font-style: italic;
-        color: #333 !important;
-    }
-    
-    .testimonial-author {
-        font-weight: 600;
-        color: #4285F4 !important;
-    }
-    
-    .stButton > button {
-        width: 100%;
-        padding: 0.75rem 1.5rem !important;
-        font-size: 1.2rem !important;
-        font-weight: 600 !important;
-        border-radius: 50px !important;
-        transition: transform 0.3s ease, box-shadow 0.3s ease !important;
-    }
-    
-    .stButton > button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    .primary-btn > button {
-        background-color: #4285F4 !important;
-        color: white !important;
-        border: none !important;
-    }
-    
-    .secondary-btn > button {
-        background-color: transparent !important;
-        color: white !important;
-        border: 2px solid white !important;
-    }
-    
-    .footer {
-        text-align: center;
-        padding: 1rem;
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 0.9rem;
-        margin-top: 2rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Hero Section
-    st.markdown('<div class="hero-section">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">Créez Votre CV Professionnel avec l\'IA</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Boostez votre visibilité en ligne avec un portfolio 100% optimisé par l\'intelligence artificielle</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Features Section
-    st.subheader("Nos Solutions Innovantes")
-    
-    feature_cols = st.columns(3)
-    
-    with feature_cols[0]:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">🚀</div>
-            <h3 class="feature-title">Création Instantanée</h3>
-            <p class="feature-text">Téléchargez votre ancien CV ou commencez de zéro. Notre IA analyse et structure votre profil en quelques secondes.</p>
+    # Utiliser le composant HTML pour un contrôle total sur le style
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Poppins', sans-serif;
+            }
+            
+            body {
+                background-color: white;
+                color: #333;
+                line-height: 1.6;
+            }
+            
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem;
+                position: relative;
+            }
+            
+            /* Formes décoratives */
+            .shape {
+                position: absolute;
+                z-index: -1;
+                border-radius: 50%;
+                opacity: 0.6;
+                filter: blur(40px);
+            }
+            
+            .shape-1 {
+                width: 300px;
+                height: 300px;
+                background-color: #FAE7EB;
+                top: -50px;
+                right: 10%;
+            }
+            
+            .shape-2 {
+                width: 200px;
+                height: 200px;
+                background-color: #E0D4E7;
+                bottom: 10%;
+                left: 5%;
+            }
+            
+            .shape-3 {
+                width: 180px;
+                height: 180px;
+                background-color: #DBEEF7;
+                top: 40%;
+                right: 15%;
+            }
+            
+            .shape-4 {
+                width: 120px;
+                height: 120px;
+                background-color: #EECEDA;
+                top: 60%;
+                left: 25%;
+            }
+            
+            /* Header */
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 0;
+                margin-bottom: 3rem;
+            }
+            
+            .logo {
+                font-size: 1.8rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                letter-spacing: 0.02em;
+            }
+            
+            .nav-buttons {
+                display: flex;
+                gap: 1rem;
+            }
+            
+            .nav-btn {
+                padding: 0.5rem 1.5rem;
+                border-radius: 50px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 0.9rem;
+            }
+            
+            .login-btn {
+                color: #6a7b96;
+                border: 1px solid #CCDCEB;
+                background-color: white;
+            }
+            
+            .login-btn:hover {
+                background-color: #CCDCEB;
+                color: #333;
+            }
+            
+            .signup-btn {
+                background: linear-gradient(135deg, #BDD2E4, #CCDCEB);
+                color: #333;
+                border: none;
+                box-shadow: 0 4px 10px rgba(189, 210, 228, 0.3);
+            }
+            
+            .signup-btn:hover {
+                box-shadow: 0 6px 15px rgba(189, 210, 228, 0.5);
+                transform: translateY(-2px);
+            }
+            
+            /* Hero section */
+            .hero {
+                display: flex;
+                align-items: center;
+                min-height: 550px;
+                margin-bottom: 5rem;
+                position: relative;
+            }
+            
+            .hero-content {
+                width: 55%;
+                padding-right: 2rem;
+                position: relative;
+                z-index: 2;
+            }
+            
+            .hero-tagline {
+                display: inline-block;
+                padding: 0.3rem 1rem;
+                background-color: #FAE7EB;
+                border-radius: 50px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-bottom: 1.5rem;
+                color: #e06e8e;
+            }
+            
+            .hero-title {
+                font-size: 3.2rem;
+                font-weight: 700;
+                line-height: 1.2;
+                margin-bottom: 1.5rem;
+                color: #333;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+                color: #6a7b96;
+                margin-bottom: 2.5rem;
+                max-width: 90%;
+            }
+            
+            .cta-buttons {
+                display: flex;
+                gap: 1rem;
+            }
+            
+            .primary-btn {
+                padding: 0.8rem 2rem;
+                border-radius: 50px;
+                font-weight: 600;
+                font-size: 1rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                background: linear-gradient(135deg, #EECEDA, #E0D4E7);
+                color: #333;
+                border: none;
+                box-shadow: 0 4px 15px rgba(238, 206, 218, 0.4);
+            }
+            
+            .primary-btn:hover {
+                box-shadow: 0 6px 20px rgba(238, 206, 218, 0.6);
+                transform: translateY(-3px);
+            }
+            
+            .secondary-btn {
+                padding: 0.8rem 2rem;
+                border-radius: 50px;
+                font-weight: 600;
+                font-size: 1rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                background-color: transparent;
+                color: #6a7b96;
+                border: 1px solid #CCDCEB;
+            }
+            
+            .secondary-btn:hover {
+                background-color: #CCDCEB;
+                color: #333;
+            }
+            
+            .hero-image-container {
+                width: 45%;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .hero-image {
+                width: 100%;
+                height: auto;
+                object-fit: contain;
+                border-radius: 10px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            }
+            
+            /* Features section */
+            .features {
+                margin-bottom: 6rem;
+            }
+            
+            .section-title {
+                text-align: center;
+                font-size: 2.2rem;
+                font-weight: 700;
+                margin-bottom: 3rem;
+                color: #333;
+            }
+            
+            .features-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+            
+            .feature-card {
+                background-color: white;
+                border-radius: 16px;
+                padding: 2rem;
+                text-align: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.02);
+                border: 1px solid #f5f5f5;
+            }
+            
+            .feature-card:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            }
+            
+            .feature-icon {
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 1.5rem;
+                font-size: 2rem;
+            }
+            
+            .icon-1 {
+                background-color: #FAE7EB;
+                color: #e06e8e;
+            }
+            
+            .icon-2 {
+                background-color: #E0D4E7;
+                color: #9b6dbb;
+            }
+            
+            .icon-3 {
+                background-color: #DBEEF7;
+                color: #5b9bd5;
+            }
+            
+            .feature-title {
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                color: #333;
+            }
+            
+            .feature-description {
+                font-size: 0.95rem;
+                color: #6a7b96;
+            }
+            
+            /* Testimonials */
+            .testimonials {
+                padding: 4rem 0;
+                background-color: #f9fafc;
+                border-radius: 30px;
+                margin-bottom: 5rem;
+            }
+            
+            .testimonial-card {
+                background-color: white;
+                border-radius: 16px;
+                padding: 2rem;
+                margin: 0 1.5rem;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+            }
+            
+            .testimonial-text {
+                font-size: 1.1rem;
+                font-style: italic;
+                color: #4a5568;
+                margin-bottom: 1.5rem;
+                line-height: 1.7;
+            }
+            
+            .testimonial-author {
+                display: flex;
+                align-items: center;
+            }
+            
+            .author-avatar {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #EECEDA, #E0D4E7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                color: white;
+                margin-right: 1rem;
+            }
+            
+            .author-info {
+                line-height: 1.4;
+            }
+            
+            .author-name {
+                font-weight: 600;
+                color: #333;
+            }
+            
+            .author-title {
+                font-size: 0.85rem;
+                color: #6a7b96;
+            }
+            
+            /* CTA Section */
+            .cta {
+                background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
+                border-radius: 24px;
+                padding: 4rem 3rem;
+                text-align: center;
+                margin-bottom: 4rem;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .cta-blob {
+                position: absolute;
+                border-radius: 50%;
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            .blob-1 {
+                width: 200px;
+                height: 200px;
+                top: -100px;
+                right: -50px;
+            }
+            
+            .blob-2 {
+                width: 150px;
+                height: 150px;
+                bottom: -70px;
+                left: -40px;
+            }
+            
+            .cta-title {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: white;
+                margin-bottom: 1.5rem;
+                position: relative;
+                z-index: 2;
+            }
+            
+            .cta-subtitle {
+                font-size: 1.1rem;
+                color: rgba(255, 255, 255, 0.9);
+                margin-bottom: 2.5rem;
+                max-width: 700px;
+                margin-left: auto;
+                margin-right: auto;
+                position: relative;
+                z-index: 2;
+            }
+            
+            /* Footer */
+            .footer {
+                text-align: center;
+                padding: 2rem 0;
+                color: #6a7b96;
+                font-size: 0.9rem;
+            }
+            
+            .footer-logo {
+                font-size: 1.5rem;
+                font-weight: 700;
+                margin-bottom: 1rem;
+                color: #333;
+            }
+            
+            /* Responsive */
+            @media (max-width: 1024px) {
+                .hero-content {
+                    width: 60%;
+                }
+                
+                .hero-image-container {
+                    width: 40%;
+                }
+                
+                .hero-title {
+                    font-size: 2.8rem;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .hero {
+                    flex-direction: column;
+                }
+                
+                .hero-content, .hero-image-container {
+                    width: 100%;
+                }
+                
+                .hero-content {
+                    margin-bottom: 3rem;
+                    padding-right: 0;
+                }
+                
+                .features-grid {
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                }
+                
+                .cta {
+                    padding: 3rem 1.5rem;
+                }
+                
+                .cta-title {
+                    font-size: 2rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Formes décoratives -->
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            
+            <!-- Header -->
+            <header class="header">
+                <div class="logo">CVision</div>
+                <div class="nav-buttons">
+                    <a href="https://beneficial-liberation-production.up.railway.app/" class="nav-btn login-btn" id="login-nav">Connexion</a>
+                    <a href="https://beneficial-liberation-production.up.railway.app/" class="nav-btn signup-btn" id="signup-nav">S'inscrire</a>
+                </div>
+            </header>
+            
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-content">
+                    <span class="hero-tagline">Alimenté par l'Intelligence Artificielle</span>
+                    <h1 class="hero-title">Transformez votre parcours en opportunités</h1>
+                    <p class="hero-subtitle">Créez un CV qui vous démarque grâce à notre analyse intelligente et nos designs minimalistes parfaitement adaptés aux recruteurs modernes.</p>
+                    <div class="cta-buttons">
+                        <a href="https://beneficial-liberation-production.up.railway.app/" class="primary-btn" id="create-cv-btn">Créer mon CV</a>
+                        <a href="https://beneficial-liberation-production.up.railway.app/" class="secondary-btn" id="discover-btn">Découvrir</a>
+                    </div>
+                </div>
+                <div class="hero-image-container">
+                    <img src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1050&q=80" alt="CV Design Example" class="hero-image">
+                </div>
+            </section>
+            
+            <!-- Features Section -->
+            <section class="features">
+                <h2 class="section-title">Pourquoi choisir CVision</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon icon-1">✨</div>
+                        <h3 class="feature-title">Analyse Intelligente</h3>
+                        <p class="feature-description">Notre IA identifie vos compétences clés et restructure votre parcours pour un impact maximal auprès des recruteurs.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon icon-2">🔍</div>
+                        <h3 class="feature-title">Optimisation ATS</h3>
+                        <p class="feature-description">Votre CV est optimisé pour passer les systèmes de tri automatisés utilisés par 90% des entreprises aujourd'hui.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon icon-3">🎨</div>
+                        <h3 class="feature-title">Design Épuré</h3>
+                        <p class="feature-description">Des mises en page élégantes et modernes qui mettent en valeur vos expériences sans surcharge visuelle.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Testimonials -->
+            <section class="testimonials">
+                <h2 class="section-title">Témoignages</h2>
+                <div class="testimonial-card">
+                    <p class="testimonial-text">"J'ai téléchargé mon ancien CV et en quelques minutes, j'ai obtenu une version nettement plus professionnelle et pertinente. Trois entretiens décrochés la semaine suivante !"</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">ML</div>
+                        <div class="author-info">
+                            <div class="author-name">Marie Lemaire</div>
+                            <div class="author-title">UX Designer</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- CTA Section -->
+            <section class="cta">
+                <div class="cta-blob blob-1"></div>
+                <div class="cta-blob blob-2"></div>
+                <h2 class="cta-title">Prêt à transformer votre carrière ?</h2>
+                <p class="cta-subtitle">Rejoignez des milliers de professionnels qui ont déjà boosté leurs opportunités professionnelles grâce à CVision</p>
+                <a href="https://beneficial-liberation-production.up.railway.app/" class="primary-btn" id="final-cta-btn">Commencer maintenant</a>
+            </section>
+            
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="footer-logo">CVision</div>
+                <p>© 2024 CVision | Tous droits réservés</p>
+            </footer>
         </div>
-        """, unsafe_allow_html=True)
+    </body>
+    </html>
+    """
     
-    with feature_cols[1]:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">✨</div>
-            <h3 class="feature-title">Design Professionnel</h3>
-            <p class="feature-text">Des templates modernes et adaptés à votre secteur d'activité pour vous démarquer auprès des recruteurs.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    msg = st.query_params.get("streamlit:componentOutput")
+
+    if msg:
+        if msg[0] == "login":
+            st.switch_page("login.py")  # Remplace par ta vraie page de login
+        elif msg[0] == "register":
+            st.switch_page("register.py")  # Page d'inscription
     
-    with feature_cols[2]:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3 class="feature-title">Optimisation ATS</h3>
-            <p class="feature-text">Votre CV est optimisé pour les systèmes de suivi des candidatures utilisés par plus de 90% des entreprises.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # Intercepter la valeur du composant qui est définie par JavaScript
+    component_value = html(html_content, height=3000)
     
-    # Stats Section
-    st.subheader("Résultats Prouvés")
+    if component_value == 'login':
+        st.session_state.page = PAGE_LOGIN
+        st.rerun()
+    elif component_value == 'register':
+        st.session_state.page = PAGE_REGISTER
+        st.rerun()
     
-    stat_cols = st.columns(3)
-    
-    with stat_cols[0]:
-        st.markdown("""
-        <div class="stat-container">
-            <p class="stat-number">85%</p>
-            <p>Taux de succès en entretien</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with stat_cols[1]:
-        st.markdown("""
-        <div class="stat-container">
-            <p class="stat-number">3X</p>
-            <p>Plus de réponses positives</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with stat_cols[2]:
-        st.markdown("""
-        <div class="stat-container">
-            <p class="stat-number">24h</p>
-            <p>CV prêt en moins de</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Call to Action buttons
-    st.markdown("<br>", unsafe_allow_html=True)
-    cta_cols = st.columns(2)
-    
-    with cta_cols[0]:
-        st.markdown('<div class="primary-btn">', unsafe_allow_html=True)
-        if st.button("Créer Mon CV Gratuitement"):
-            st.session_state.page = PAGE_REGISTER
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with cta_cols[1]:
-        st.markdown('<div class="secondary-btn">', unsafe_allow_html=True)
-        if st.button("Me Connecter"):
-            st.session_state.page = PAGE_LOGIN
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Testimonials
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("Ils ont transformé leur carrière")
-    
-    testimonial_cols = st.columns(3)
-    
-    with testimonial_cols[0]:
-        st.markdown("""
-        <div class="testimonial-card">
-            <p class="testimonial-text">"Grâce à CV Manager, j'ai décroché un entretien chez Google après 3 mois de recherche infructueuse."</p>
-            <p class="testimonial-author">— Marie L., Développeuse Full Stack</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with testimonial_cols[1]:
-        st.markdown("""
-        <div class="testimonial-card">
-            <p class="testimonial-text">"L'optimisation par IA a parfaitement mis en valeur mon parcours atypique. Les recruteurs me contactent désormais directement."</p>
-            <p class="testimonial-author">— Thomas B., Consultant en Transition Numérique</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with testimonial_cols[2]:
-        st.markdown("""
-        <div class="testimonial-card">
-            <p class="testimonial-text">"Un outil indispensable pour les jeunes diplômés comme moi qui n'ont pas beaucoup d'expérience à mettre en avant."</p>
-            <p class="testimonial-author">— Camille D., Ingénieure débutante</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Footer
-    st.markdown("""
-    <div class="footer">
-        © 2024 CV Manager | Propulsé par l'IA | Tous droits réservés
-    </div>
-    """, unsafe_allow_html=True)
 
 # Mise à jour de la fonction principale pour inclure la page d'accueil
 def main():
     # Essayer de définir un arrière-plan
-    try:
-        # Pour un fond d'image, vous pouvez créer un dossier 'assets' et y mettre une image
-        # set_background("assets/background.png")
-        
-        # Ou utiliser un fond de couleur dégradée
-        st.markdown(
-            """
-            <style>
-            .stApp {
-                background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-                background-attachment: fixed;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-    except:
-        pass
     
     # Masquer les éléments Streamlit par défaut sur la page d'accueil
     if st.session_state.page == PAGE_HOME:
