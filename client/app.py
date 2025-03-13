@@ -176,6 +176,22 @@ def delete_cv(username: str) -> tuple:
     except Exception as e:
         return False, f"Error deleting CV: {str(e)}"
 
+def update_cv_image(username: str, file) -> tuple:
+    """Convert image to base64 and update via the update_cv_section API"""
+    try:
+        # Convert image to base64
+        import base64
+        file_bytes = file.getvalue()
+        base64_image = base64.b64encode(file_bytes).decode('utf-8')
+        
+        # Use the existing update_cv_section function
+        if update_cv_section(username, "image_base64", base64_image):
+            return True, "Profile image updated successfully"
+        else:
+            return False, "Failed to update profile image"
+    except Exception as e:
+        return False, f"Error processing image: {str(e)}"
+
 def show_login_page():
     st.title("Login")
     
@@ -463,7 +479,6 @@ def show_user_profile():
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-
 def show_view_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
@@ -472,57 +487,41 @@ def show_view_cv():
     username = st.session_state.user["name"]
     st.title(f"{username}'s CV")
     
-    cv_data = get_cv_data(username)
+    # URL du CV public
+    public_cv_url = f"{SERVER_URL}/user/{username}"
     
-    if not cv_data:
-        st.warning("CV data could not be loaded")
-    else:
-        st.header(cv_data.get("header", f"Welcome to {username}'s CV"))
-        
-        st.subheader("About")
-        st.write(cv_data.get("section1", "No information available"))
-        
-        st.subheader("Additional Information")
-        # Utiliser unsafe_allow_html=True pour rendre correctement le HTML
-        section2_html = cv_data.get("section2", "<div class='hobbies-list'></div>")
-        st.markdown(section2_html, unsafe_allow_html=True)
-        
-        # Afficher les autres sections disponibles
-        if cv_data.get("experience"):
-            st.subheader("Professional Experience")
-            st.markdown(cv_data.get("experience"), unsafe_allow_html=True)
-        
-        if cv_data.get("education"):
-            st.subheader("Education")
-            st.markdown(cv_data.get("education"), unsafe_allow_html=True)
-        
-        if cv_data.get("skills"):
-            st.subheader("Skills")
-            st.markdown(cv_data.get("skills"), unsafe_allow_html=True)
-        
-        # Afficher les informations de contact
-        st.subheader("Contact Information")
-        contact_info = f"""
-        * **Email:** {cv_data.get('email', '')}
-        * **Phone:** {cv_data.get('phone', '')}
-        * **Location:** {cv_data.get('location', '')}
-        """
-        st.markdown(contact_info)
+    
+
+    # Afficher le CV en ligne avec iframe
+    st.markdown("### Online CV Viewer")
+    st.markdown("Below is your live online CV as others will see it when you share your public link:")
+    
+    # Utiliser un composant HTML pour créer un iframe responsive
+    html_iframe = f"""
+    <div style="position: relative; padding-bottom: 150%; height: 0; overflow: hidden; max-width: 100%; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <iframe src="{public_cv_url}" 
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+            title="{username}'s CV">
+        </iframe>
+    </div>
+    <p style="text-align: center; margin-top: 10px; font-size: 14px; color: #888;">
+        <a href="{public_cv_url}" target="_blank" style="color: #1E88E5; text-decoration: none;">
+            Open in a new tab <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+    </p>
+    """
+    
+    # Rendre l'iframe
+    st.components.v1.html(html_iframe, height=600)
     
     # Ajouter le lien vers le CV public
     show_public_cv_link(username)
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("Back to Profile", key="back_to_profile_btn_view"):
-            st.session_state.page = PAGE_USER_PROFILE
-            st.rerun()
-    
-    with col2:
-        if st.button("Edit CV", key="edit_cv_btn_view"):
-            st.session_state.page = PAGE_EDIT_CV
-            st.rerun()
+   
+    if st.button("Back to Profile", key="back_to_profile_btn_view"):
+        st.session_state.page = PAGE_USER_PROFILE
+        st.rerun()
+   
 
 def show_edit_cv():
     if not st.session_state.user:
@@ -543,6 +542,38 @@ def show_edit_cv():
     
     # Personal information section
     st.header("Personal Information")
+    
+    # Profile Image Section
+    st.subheader("Profile Image")
+    
+    # Afficher l'image actuelle si elle existe
+    if cv_data.get("image_base64"):
+        st.image(
+            f"data:image/jpeg;base64,{cv_data['image_base64']}", 
+            width=150, 
+            caption="Current Profile Image"
+        )
+    
+    # Upload d'une nouvelle image
+    uploaded_image = st.file_uploader(
+        "Upload new profile image", 
+        type=["jpg", "jpeg", "png"],
+        key="profile_image_uploader",
+        help="Upload a new profile picture (JPG or PNG format)"
+    )
+    
+    if uploaded_image is not None:
+        # Afficher l'aperçu
+        st.image(uploaded_image, width=150, caption="Preview")
+        
+        if st.button("Update Profile Image"):
+            with st.spinner("Updating your profile image..."):
+                success, message = update_cv_image(username, uploaded_image)
+                if success:
+                    st.success(message)
+                    st.info("Your profile has been updated. Refresh the page to see changes.")
+                else:
+                    st.error(message)
     
     # Name fields
     col1, col2 = st.columns(2)
