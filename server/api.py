@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import secrets
 import tempfile
 import json
-from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
+from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image, extract_text_and_first_image_from_pdf
 from modules.llm_structuring import structure_cv_json
 from modules.pdf_preprocessing import remove_background_from_pdf
 
@@ -427,12 +427,12 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             remove_background_from_pdf(temp_path, cleaned_pdf_path)
             
             # Extract text from the cleaned PDF
-            text_noir_blanc = extract_text_from_pdf(cleaned_pdf_path)
+            text_noir_blanc = extract_text_and_first_image_from_pdf(cleaned_pdf_path)
             
             # Clean up the cleaned PDF file
             os.unlink(cleaned_pdf_path)
         elif file_extension in ['jpg', 'jpeg', 'png']:
-            text_original = extract_text_from_image(temp_path)
+            text_original = extract_text_and_first_image_from_pdf(temp_path)
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format")
         
