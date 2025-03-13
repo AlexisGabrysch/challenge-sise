@@ -21,7 +21,8 @@ from modules.pdf_preprocessing import remove_background_from_pdf
 from modules.ocr_extraction import extract_text_and_first_image_from_pdf, extract_text_from_pdf, extract_text_from_image
 from modules.llm_structuring import structure_cv_json
 from modules.cv_utils import add_cv_to_user
-
+from pdf2image import convert_from_path
+import tempfile
 
 # Classes pour validation
 class LoginRequest(BaseModel):
@@ -437,8 +438,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             if not ocr_text_original and not ocr_text_clean:
                 logger.info("Both PDF extraction methods failed. Converting PDF to image for OCR...")
                 try:
-                    from pdf2image import convert_from_path
-                    import tempfile
+                    
                     
                     # Convert PDF to images
                     with tempfile.TemporaryDirectory() as path:
