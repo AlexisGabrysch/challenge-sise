@@ -372,6 +372,9 @@
     </style>
             <button class="edit-btn {% if is_owner %}owner{% endif %}" onclick="toggleEdit('header')">Modifier</button>
 <body>
+    <div class="theme-toggle" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <button style="padding: 8px 15px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=ats'">Thème ATS</button>
+    </div>
     <div class="container">
         <!-- En-tête du CV -->
         <div class="cv-header" id="header-section">

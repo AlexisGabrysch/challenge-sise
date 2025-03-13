@@ -445,11 +445,11 @@ async def test(request: Request):
     logger.debug("Test endpoint accessed")
     return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
 
-# Support both /users/ and /user/
+# Modifier cette fonction de routage pour supporter les thèmes
 @app.get("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
-async def user_page(request: Request, name: str):
-    logger.debug(f"User page accessed for name: {name}")
+async def user_page(request: Request, name: str, theme: str = None):
+    logger.debug(f"User page accessed for name: {name}, theme: {theme}")
     try:
         # Get or create user
         user_id = get_or_create_user(name)
@@ -490,8 +490,11 @@ async def user_page(request: Request, name: str):
                 current_user_name = current_user["name"]
                 is_owner = current_user["name"] == name
         
+        # Sélectionner le template en fonction du paramètre de thème
+        template_name = "user_template_ats.html" if theme == "ats" else "user_template.html"
+        
         return templates.TemplateResponse(
-            "user_template.html", 
+            template_name, 
             {
                 "request": request, 
                 "name": name, 
@@ -506,7 +509,7 @@ async def user_page(request: Request, name: str):
                 "education": education,
                 "skills": skills,
                 "SERVER_URL": SERVER_URL,
-                "client_url": CLIENT_URL,
+                "CLIENT_URL": CLIENT_URL,
                 "is_owner": is_owner,
                 "logged_in": session_token is not None,
                 "current_user_name": current_user_name
@@ -515,7 +518,7 @@ async def user_page(request: Request, name: str):
     except Exception as e:
         logger.error(f"Error serving user page: {e}")
         return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
-
+    
 # Support both paths for updates
 @app.post("/users/{name}/update", response_class=RedirectResponse)
 @app.post("/user/{name}/update", response_class=RedirectResponse)
