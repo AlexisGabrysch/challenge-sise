@@ -1,7 +1,7 @@
 import json
 import time
 from mistralai import Mistral
-from config import API_KEY
+from .config import API_KEY
 
 def structure_cv_json(ocr_text: str) -> dict:
     """
