@@ -2,8 +2,6 @@ import streamlit as st
 from streamlit.components.v1 import html
 import os
 import sys
-import mysql.connector
-from mysql.connector import Error
 import requests
 import json
 from typing import Optional, Dict, Any
