@@ -690,16 +690,13 @@ async def user_page(request: Request, name: str, theme: str = None):
                     </div>
                     '''
                 languages_html += '</div>\n'
-            
             # Hobbies
             hobbies_html = ""
             if "hobbies" in cv and cv["hobbies"]:
                 hobbies_html += '<div class="hobbies-list">\n'
-                for i, hobby in enumerate(cv["hobbies"]):
-                    emoji = ["🏃", "📚", "✈️", "🎮", "🎸", "🎭", "🏊", "⚽", "🎨", "🎧"][i % 10]  # Cycle through emojis
+                for hobby in cv["hobbies"]:
                     hobbies_html += f'''
                     <div class="hobby-item">
-                        <div class="hobby-icon">{emoji}</div>
                         <span>{hobby}</span>
                     </div>
                     '''
