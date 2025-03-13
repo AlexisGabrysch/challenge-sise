@@ -1,44 +1,49 @@
-# Streamlit Name App
+# CVVISION - Génération de CV en ligne via IA  
 
-This is a simple Streamlit application that allows users to enter their first name and generates a personalized page based on the input.
+[![Deploy](https://img.shields.io/badge/Access-App-blue)](https://beneficial-liberation-production.up.railway.app/)  
 
-## Project Structure
+Une application permettant de transformer un CV classique en une page web professionnelle, optimisée pour les recruteurs et le référencement.  
 
+## 🌟 Fonctionnalités  
+✔️ **Génération automatique** d’un CV web à partir d’un fichier téléchargé.  
+✔️ **Mise en page claire et esthétique** pour une meilleure lisibilité.  
+✔️ **Accès facile** via une URL unique, sans téléchargement de fichiers.
+✔️ **Editable** pour plus de contrôle et d'interactivité.
+
+## 🏗️ Stack Technique  
+🔹 **OCR** : Mistral OCR pour l’extraction de texte à partir des PDF/images.  
+🔹 **Modèle IA** : ministral-8B-latest pour l’analyse et la structuration du CV.  
+🔹 **Base de données** : MongoDB Atlas pour stocker les informations extraites.
+🔹 **Backend** : FastAPI pour gérer la connexion à la base de données.   
+🔹 **Frontend** : Streamlit pour une interface simple et rapide.  
+🔹 **Déploiement** : Railway pour une mise en production fluide. 
+
+## 🎯 Pourquoi utiliser CVVISION ?  
+✅ **Pour les candidats** : plus de visibilité et un CV toujours accessible.  
+✅ **Pour les recruteurs** : un format standardisé et lisible en un clic.  
+✅ **Pour tous** : un gain de temps et une meilleure expérience utilisateur.  
+
+## 🔗 Accès à l’application  
+[➡️ Essayez dès maintenant](https://beneficial-liberation-production.up.railway.app/)
+
+## 🔧 Installation & Déploiement  
+Si vous souhaitez exécuter l’application en local :  
+
+### 1️) Cloner le dépôt  
+```bash
+git clone https://github.com/votre-repo.git
+cd votre-repo
 ```
-streamlit-name-app
-├── app.py
-├── pages
-│   └── user_page.py
-├── requirements.txt
-└── README.md
+
+### 2) Construire l’image Docker
+```bash
+docker build -t cv-web-generator .
 ```
 
-## Installation
+### 3) Lancer le conteneur
+```bash
+docker run -p 8501:8501 cv-web-generator
+```
 
-1. Clone the repository or download the project files.
-2. Navigate to the project directory.
-3. Install the required dependencies using pip:
-
-   ```
-   pip install -r requirements.txt
-   ```
-
-## Usage
-
-1. Run the application using the following command:
-
-   ```
-   streamlit run app.py
-   ```
-
-2. Open your web browser and go to `http://localhost:8501`.
-3. Enter your first name in the input field and click the "validate" button.
-4. You will be redirected to a personalized page displaying a message with your name.
-
-## Dependencies
-
-- Streamlit
-
-## Contributing
-
-Feel free to submit issues or pull requests for improvements or bug fixes.
+## 📩 Contact & Feedback  
+Des suggestions ou des retours ? Ouvrez une issue ou contactez-nous !  
