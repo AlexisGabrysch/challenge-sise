@@ -569,7 +569,7 @@ async def test(request: Request):
     logger.debug("Test endpoint accessed")
     return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
 
-("/users/{name}", response_class=HTMLResponse)
+@app.get("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str, theme: str = None):
     logger.debug(f"User page accessed for name: {name}, theme: {theme}")
@@ -581,7 +581,6 @@ async def user_page(request: Request, name: str, theme: str = None):
             user_id = get_or_create_user_by_name(name)
         else:
             user_id = str(user["_id"])
-        
         # Get CV content
         cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
         
