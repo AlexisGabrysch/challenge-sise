@@ -120,8 +120,8 @@ def authenticate_user(email: str, password: str):
 def create_session(user_id: str):
     """Create a new session for a user"""
     token = secrets.token_hex(32)
-    # Change from 30 days to 10 minutes
-    expires = datetime.utcnow() + timedelta(minutes=10)
+    # Change from 10 minutes to 30 days
+    expires = datetime.utcnow() + timedelta(days=30)  # Changed from minutes=10 to days=30
     
     session = {
         "user_id": user_id,
@@ -288,38 +288,57 @@ async def login(
     # Create response with redirect
     response = RedirectResponse(url=f"/user/{user['name']}", status_code=303)
     
-    # Set cookie - change from 30 days to 10 minutes
+    # Set cookie - change from 10 minutes to 30 days
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
-        max_age=10*60,  # 10 minutes in seconds (600 seconds)
+        max_age=30*24*60*60,  # 30 days in seconds (2592000 seconds)
         path="/"
     )
     
     return response
-@app.post("/api/register")
-async def api_register(register_data: RegisterRequest):
-    """API endpoint pour l'inscription"""
-    logger.debug(f"API Register attempt: {register_data.name}, {register_data.email}")
+
+@app.post("/register", response_class=RedirectResponse)
+async def register(
+    request: Request,
+    name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...)
+):
+    logger.debug("Register attempt")
+    
+    # Validate passwords match
+    if password != password_confirm:
+        return RedirectResponse(url="/register?error=Passwords+do+not+match", status_code=303)
     
     try:
         # Create user
-        user_id = create_user(register_data.name, register_data.email, register_data.password)
+        user_id = create_user(name, email, password)
         
         # Create session
         session_token = create_session(str(user_id))
         
-        # Return user data and token
-        return {
-            "id": str(user_id),
-            "name": register_data.name,
-            "email": register_data.email,
-            "session_token": session_token
-        }
+        # Create response with redirect
+        response = RedirectResponse(url=f"/user/{name}", status_code=303)
+        
+        # Set cookie - change from 10 minutes to 30 days
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            max_age=30*24*60*60,  # 30 days in seconds
+            path="/"
+        )
+        
+        return response
     
     except HTTPException as e:
-        raise e
+        error_message = e.detail.replace(" ", "+")
+        return RedirectResponse(url=f"/register?error={error_message}", status_code=303)
+    
+    
 @app.get("/api/cv/{name}")
 async def api_get_cv(name: str, authorization: str = Header(None)):
     """API endpoint pour récupérer les données du CV"""
