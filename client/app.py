@@ -294,7 +294,6 @@ def show_user_profile():
     if st.button("Logout", key="logout_btn_profile"):
         logout()
         st.rerun()
-
 def show_view_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
@@ -314,7 +313,31 @@ def show_view_cv():
         st.write(cv_data.get("section1", "No information available"))
         
         st.subheader("Additional Information")
-        st.write(cv_data.get("section2", "No information available"))
+        # Utiliser unsafe_allow_html=True pour rendre correctement le HTML
+        section2_html = cv_data.get("section2", "<div class='hobbies-list'></div>")
+        st.markdown(section2_html, unsafe_allow_html=True)
+        
+        # Afficher les autres sections disponibles
+        if cv_data.get("experience"):
+            st.subheader("Professional Experience")
+            st.markdown(cv_data.get("experience"), unsafe_allow_html=True)
+        
+        if cv_data.get("education"):
+            st.subheader("Education")
+            st.markdown(cv_data.get("education"), unsafe_allow_html=True)
+        
+        if cv_data.get("skills"):
+            st.subheader("Skills")
+            st.markdown(cv_data.get("skills"), unsafe_allow_html=True)
+        
+        # Afficher les informations de contact
+        st.subheader("Contact Information")
+        contact_info = f"""
+        * **Email:** {cv_data.get('email', '')}
+        * **Phone:** {cv_data.get('phone', '')}
+        * **Location:** {cv_data.get('location', '')}
+        """
+        st.markdown(contact_info)
     
     # Ajouter le lien vers le CV public
     show_public_cv_link(username)
@@ -330,7 +353,6 @@ def show_view_cv():
         if st.button("Edit CV", key="edit_cv_btn_view"):
             st.session_state.page = PAGE_EDIT_CV
             st.rerun()
-
 def show_edit_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
