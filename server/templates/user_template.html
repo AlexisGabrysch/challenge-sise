@@ -449,7 +449,7 @@
     <div class="container">
         <!-- En-tête du CV avec nom et titre -->
         <div class="cv-header" id="header-section">
-            <button class="edit-btn" onclick="toggleEdit('header')">Modifier</button>
+            <button class="edit-btn {% if is_owner %}owner{% endif %}" onclick="toggleEdit('header')">Modifier</button>
             <div class="profile-info">
                 <h1 class="name">{{ header }}</h1>
                 {% if title is defined %}
