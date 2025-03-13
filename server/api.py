@@ -308,47 +308,37 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
     
     if not user:
         # Create a new user if not found
-        user_id = get_or_create_user(name)
+        user_id = get_or_create_user_by_name(name)
     else:
         user_id = str(user["_id"])
     
     # Get CV data from MongoDB
-    cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})
+    cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
     
-    # Get default sections if CV doesn't exist
-    if not cv:
-        cv = {
-            "sections": {
-                "header": name,
-                "section1": "Développeur web passionné avec plus de 5 ans d'expérience.",
-                "section2": "<div class=\"hobbies-list\">\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🏃</div>\n        <span>Course à pied</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">📚</div>\n        <span>Lecture</span>\n    </div>\n</div>",
-                "experience": '<div class="timeline-item">\n    <div class="date">Jan 2023 - Présent</div>\n    <h3 class="timeline-title">Développeur Full Stack</h3>\n    <div class="organization">Tech Solutions Inc.</div>\n    <p class="description">Développement et maintenance d\'applications web utilisant React, Node.js et MongoDB.</p>\n</div>',
-                "education": '<div class="timeline-item">\n    <div class="date">2019 - 2022</div>\n    <h3 class="timeline-title">Master en Informatique</h3>\n    <div class="organization">Université de Paris</div>\n    <p class="description">Spécialisation en développement web et applications mobiles.</p>\n</div>',
-                "skills": '<div class="skill-tag">JavaScript</div>\n<div class="skill-tag">React.js</div>\n<div class="skill-tag">Node.js</div>',
-                "title": "Développeur Full Stack",
-                "email": f"{name}@example.com",
-                "phone": "06 12 34 56 78",
-                "location": "Paris, France",
-                "linkedin": f"linkedin.com/in/{name}"
-            }
-        }
+    result = {"name": name}
     
-    # Return CV data
-    return {
-        "name": name,
-        "header": cv["sections"].get("header", name),
-        "section1": cv["sections"].get("section1", ""),
-        "section2": cv["sections"].get("section2", ""),
-        "experience": cv["sections"].get("experience", ""),
-        "education": cv["sections"].get("education", ""),
-        "skills": cv["sections"].get("skills", ""),
-        "title": cv["sections"].get("title", "Développeur Full Stack"),
-        "email": cv["sections"].get("email", f"{name}@example.com"),
-        "phone": cv["sections"].get("phone", "06 12 34 56 78"),
-        "location": cv["sections"].get("location", "Paris, France"),
-        "linkedin": cv["sections"].get("linkedin", f"linkedin.com/in/{name}")
-    }
-
+    if cv_doc and "sections" in cv_doc:
+        cv = cv_doc["sections"]
+        
+        # Map MongoDB document structure to API response
+        if "first_name" in cv and "last_name" in cv:
+            result["header"] = f"{cv['first_name']} {cv['last_name']}"
+        elif "first_name" in cv:
+            result["header"] = cv['first_name']
+        elif "last_name" in cv:
+            result["header"] = cv['last_name']
+        
+        # Add all fields that exist
+        for field in ["email", "phone", "address", "summary", "skills", "education", "work_experience", "projects", "hobbies", "languages", "certifications", "driving_license"]:
+            if field in cv and cv[field]:
+                if field == "address":
+                    result["location"] = cv[field]
+                elif field == "summary":
+                    result["section1"] = cv[field]
+                else:
+                    result[field] = cv[field]
+    
+    return result
 @app.post("/api/cv/{name}/update")
 async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: str = Header(None)):
     """API endpoint pour mettre à jour une section du CV"""
@@ -579,7 +569,7 @@ async def test(request: Request):
     logger.debug("Test endpoint accessed")
     return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
 
-@app.get("/users/{name}", response_class=HTMLResponse)
+("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str, theme: str = None):
     logger.debug(f"User page accessed for name: {name}, theme: {theme}")
@@ -593,7 +583,7 @@ async def user_page(request: Request, name: str, theme: str = None):
             user_id = str(user["_id"])
         
         # Get CV content
-        cv = get_cv_content(user_id)
+        cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
         
         # Check if current user is the owner of the page
         session_token = request.cookies.get("session_token")
@@ -607,7 +597,7 @@ async def user_page(request: Request, name: str, theme: str = None):
                 current_user_name = current_user["name"]
                 is_owner = current_user["name"] == name
         
-        # Prepare template data
+        # Prepare template data with base info
         template_data = {
             "request": request,
             "name": name,
@@ -618,26 +608,141 @@ async def user_page(request: Request, name: str, theme: str = None):
             "current_user_name": current_user_name
         }
         
-        # Add required fields with defaults if missing
-        template_data["header"] = cv.get("header") or name
-        template_data["section1"] = cv.get("section1") or "Développeur web passionné avec plus de 5 ans d'expérience."
-        template_data["section2"] = cv.get("section2") or '<div class="hobbies-list"><div class="hobby-item"><div class="hobby-icon">🏃</div><span>Course à pied</span></div><div class="hobby-item"><div class="hobby-icon">📚</div><span>Lecture</span></div></div>'
-        
-        # Add optional fields only if they exist
-        for field in ["experience", "education", "skills", "title", "email", "phone", "location"]:
-            if cv.get(field):
-                template_data[field] = cv[field]
+        # No default values - only pass sections that exist in CV
+        if cv_doc and "sections" in cv_doc:
+            cv = cv_doc["sections"]
+            
+            # Map MongoDB document structure to template fields
+            
+            # Header (full name)
+            if "first_name" in cv and "last_name" in cv:
+                template_data["header"] = f"{cv['first_name']} {cv['last_name']}"
+            elif "first_name" in cv:
+                template_data["header"] = cv['first_name']
+            elif "last_name" in cv:
+                template_data["header"] = cv['last_name']
             else:
-                # Set some defaults for basic fields
-                if field == "title":
-                    template_data[field] = "Développeur Full Stack"
-                elif field == "email":
-                    template_data[field] = f"{name}@example.com"
-                elif field == "phone":
-                    template_data[field] = "06 12 34 56 78" 
-                elif field == "location":
-                    template_data[field] = "Paris, France"
-        
+                template_data["header"] = name
+                
+            # Section 1 (About)
+            if "summary" in cv:
+                template_data["section1"] = cv["summary"]
+                
+            # Contact information
+            if "email" in cv:
+                template_data["email"] = cv["email"]
+                
+            if "phone" in cv:
+                template_data["phone"] = cv["phone"]
+                
+            if "address" in cv:
+                template_data["location"] = cv["address"]
+            
+            # Professional title
+            if "job_title" in cv and cv["job_title"]:
+                template_data["title"] = cv["job_title"]
+            elif "work_experience" in cv and cv["work_experience"] and len(cv["work_experience"]) > 0:
+                template_data["title"] = cv["work_experience"][0]["job_title"]
+            
+            # Work Experience
+            if "work_experience" in cv and cv["work_experience"]:
+                experience_html = ""
+                for exp in cv["work_experience"]:
+                    experience_html += f'''
+                    <div class="timeline-item">
+                        <div class="date">{exp.get("duration", "")}</div>
+                        <h3 class="timeline-title">{exp.get("job_title", "")}</h3>
+                        <div class="organization">{exp.get("company", "")}</div>
+                        <p class="description">{exp.get("description", "")}</p>
+                    </div>
+                    '''
+                template_data["experience"] = experience_html
+            
+            # Education
+            if "education" in cv and cv["education"]:
+                education_html = ""
+                for edu in cv["education"]:
+                    education_html += f'''
+                    <div class="timeline-item">
+                        <div class="date">{edu.get("year", "")}</div>
+                        <h3 class="timeline-title">{edu.get("degree", "")}</h3>
+                        <div class="organization">{edu.get("school", "")}</div>
+                        <p class="description">{edu.get("details", "")}</p>
+                    </div>
+                    '''
+                template_data["education"] = education_html
+            
+            # Skills
+            if "skills" in cv and cv["skills"]:
+                skills_html = ""
+                for skill in cv["skills"]:
+                    skills_html += f'<div class="skill-tag">{skill}</div>\n'
+                template_data["skills"] = skills_html
+            
+            # Languages
+            languages_html = ""
+            if "languages" in cv and cv["languages"]:
+                languages_html += '<div class="languages-list">\n'
+                for lang, level in cv["languages"].items():
+                    languages_html += f'''
+                    <div class="language-item">
+                        <span class="language-name">{lang}</span>
+                        <span class="language-level">({level})</span>
+                    </div>
+                    '''
+                languages_html += '</div>\n'
+            
+            # Hobbies
+            hobbies_html = ""
+            if "hobbies" in cv and cv["hobbies"]:
+                hobbies_html += '<div class="hobbies-list">\n'
+                for i, hobby in enumerate(cv["hobbies"]):
+                    emoji = ["🏃", "📚", "✈️", "🎮", "🎸", "🎭", "🏊", "⚽", "🎨", "🎧"][i % 10]  # Cycle through emojis
+                    hobbies_html += f'''
+                    <div class="hobby-item">
+                        <div class="hobby-icon">{emoji}</div>
+                        <span>{hobby}</span>
+                    </div>
+                    '''
+                hobbies_html += '</div>\n'
+            
+            # Certifications
+            certifications_html = ""
+            if "certifications" in cv and cv["certifications"]:
+                certifications_html += '<div class="certifications-list">\n'
+                for cert in cv["certifications"]:
+                    certifications_html += f'<div class="certification-item">{cert}</div>\n'
+                certifications_html += '</div>\n'
+            
+            # Combine languages, hobbies, certifications into section2
+            combined_html = ""
+            if languages_html:
+                combined_html += f'<h3 class="subsection-title">Langues</h3>\n{languages_html}\n'
+            if hobbies_html:
+                combined_html += f'<h3 class="subsection-title">Centres d\'intérêt</h3>\n{hobbies_html}\n'
+            if certifications_html:
+                combined_html += f'<h3 class="subsection-title">Certifications</h3>\n{certifications_html}\n'
+            
+            if combined_html:
+                template_data["section2"] = combined_html
+            
+            # Projects (if any)
+            if "projects" in cv and cv["projects"]:
+                projects_html = ""
+                for project in cv["projects"]:
+                    projects_html += f'''
+                    <div class="project-item">
+                        <h3 class="project-title">{project.get("title", "")}</h3>
+                        <div class="project-type">{project.get("type", "")}</div>
+                        <p class="project-description">{project.get("description", "")}</p>
+                    </div>
+                    '''
+                template_data["projects"] = projects_html
+                
+            # Other potential sections
+            if "driving_license" in cv and cv["driving_license"]:
+                template_data["driving_license"] = cv["driving_license"]
+                
         # Select template based on theme
         template_name = "user_template_ats.html" if theme == "ats" else "user_template.html"
         
@@ -646,7 +751,6 @@ async def user_page(request: Request, name: str, theme: str = None):
     except Exception as e:
         logger.error(f"Error serving user page: {e}")
         return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
-
 @app.post("/users/{name}/update", response_class=RedirectResponse)
 @app.post("/user/{name}/update", response_class=RedirectResponse)
 async def update_content(
