@@ -437,11 +437,9 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             raise HTTPException(status_code=400, detail="Unsupported file format")
         
 
-        # Combine text from both versions
-        text = f"{text_noir_blanc}\n\n{text_original}"
 
         # Structure CV data with LLM
-        cv_data = structure_cv_json(text)
+        cv_data = structure_cv_json(text_original , text_noir_blanc)
         
         # Update CV sections with extracted data
         cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})

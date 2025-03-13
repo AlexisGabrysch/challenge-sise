@@ -3,7 +3,7 @@ import time
 from mistralai import Mistral
 from .config import API_KEY
 
-def structure_cv_json(ocr_text: str) -> dict:
+def structure_cv_json(ocr_text_original: str , ocr_text_baw: str) -> dict:
     """
     Convertit le texte OCR en JSON structuré en utilisant Mistral-8B.
     
@@ -29,9 +29,12 @@ The OCR was performed on two versions of the document:
 - **Processed PDF (Black & White)** (captures text that may be hidden due to background colors)
 
 <BEGIN_PDF_OCR>
-{ocr_text}
+{ocr_text_original}
 <END_PDF_OCR>
 
+<BEGIN_PDF_OCR>
+{ocr_text_baw}
+<END_PDF_OCR>
 ### Task:
 Convert this into a well-structured JSON response following the exact schema below.  
 Ensure all extracted information is accurate, well-formatted, and **free of redundancy**.  
