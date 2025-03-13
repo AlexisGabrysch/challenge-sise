@@ -31,18 +31,18 @@ Si vous souhaitez exécuter l’application en local :
 
 ### 1️) Cloner le dépôt  
 ```bash
-git clone https://github.com/votre-repo.git
-cd votre-repo
+git clone https://github.com/AlexisGabrysch/challenge-sise
+cd challenge-sise/client
 ```
 
-### 2) Construire l’image Docker
+### 2) Lancer l'application streamlit
 ```bash
-docker build -t cv-web-generator .
+streamlit run app.py
 ```
 
-### 3) Lancer le conteneur
+### 3) Oubliez pas de mettre à jours les packages
 ```bash
-docker run -p 8501:8501 cv-web-generator
+pip install -r requirements.txt
 ```
 
 ## 📩 Contact & Feedback  
