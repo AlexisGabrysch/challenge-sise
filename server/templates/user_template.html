@@ -490,6 +490,48 @@
             </div>
         </div>
 
+        <!-- Formulaire pour éditer les informations personnelles -->
+        <div class="edit-form" id="personal-info-form">
+            <form action="./{{ name }}/update-field" method="post">
+                <div class="form-group">
+                    <label for="first_name">Prénom</label>
+                    <input type="text" name="first_name" value="{{ cv.first_name if cv.first_name else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Nom</label>
+                    <input type="text" name="last_name" value="{{ cv.last_name if cv.last_name else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" name="email" value="{{ cv.email if cv.email else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Téléphone</label>
+                    <input type="text" name="phone" value="{{ cv.phone if cv.phone else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="address">Adresse</label>
+                    <input type="text" name="address" value="{{ cv.address if cv.address else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="job_title">Titre professionnel</label>
+                    <input type="text" name="job_title" value="{{ cv.job_title if cv.job_title else '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="summary">À propos</label>
+                    <textarea name="summary">{{ cv.summary if cv.summary else '' }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="driving_license">Permis de conduire</label>
+                    <input type="text" name="driving_license" value="{{ cv.driving_license if cv.driving_license else '' }}">
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="cancel-btn" onclick="toggleEdit('personal-info')">Annuler</button>
+                    <button type="submit" class="save-btn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+
         <!-- Section À Propos (conditionnelle) -->
         {% if section1 is defined %}
         <div class="section">
@@ -556,6 +598,132 @@
         </div>
         {% endif %}
 
+        <!-- Formulaire pour éditer les expériences professionnelles -->
+        <div class="edit-form" id="work-experience-form">
+            <form action="./{{ name }}/update-field" method="post" id="work-form">
+                <input type="hidden" name="field" value="work_experience">
+                
+                <div id="work-container">
+                    {% if cv.work_experience %}
+                        {% for exp in cv.work_experience %}
+                        <div class="experience-item">
+                            <div class="form-group">
+                                <label>Poste</label>
+                                <input type="text" name="job_title[]" value="{{ exp.job_title }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Entreprise</label>
+                                <input type="text" name="company[]" value="{{ exp.company }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Période</label>
+                                <input type="text" name="duration[]" value="{{ exp.duration }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea name="description[]">{{ exp.description }}</textarea>
+                            </div>
+                            <button type="button" onclick="removeExperience(this)" class="remove-btn">Supprimer cette expérience</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="experience-item">
+                            <div class="form-group">
+                                <label>Poste</label>
+                                <input type="text" name="job_title[]" value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Entreprise</label>
+                                <input type="text" name="company[]" value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Période</label>
+                                <input type="text" name="duration[]" value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea name="description[]"></textarea>
+                            </div>
+                            <button type="button" onclick="removeExperience(this)" class="remove-btn">Supprimer cette expérience</button>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <button type="button" onclick="addExperience()" class="add-btn">Ajouter une expérience</button>
+                
+                <div class="form-buttons">
+                    <button type="button" class="cancel-btn" onclick="toggleEdit('work-experience')">Annuler</button>
+                    <button type="button" class="save-btn" onclick="submitWorkExperience()">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+
+        <script>
+        function addExperience() {
+            const container = document.getElementById('work-container');
+            const div = document.createElement('div');
+            div.className = 'experience-item';
+            div.innerHTML = `
+                <div class="form-group">
+                    <label>Poste</label>
+                    <input type="text" name="job_title[]" value="">
+                </div>
+                <div class="form-group">
+                    <label>Entreprise</label>
+                    <input type="text" name="company[]" value="">
+                </div>
+                <div class="form-group">
+                    <label>Période</label>
+                    <input type="text" name="duration[]" value="">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description[]"></textarea>
+                </div>
+                <button type="button" onclick="removeExperience(this)" class="remove-btn">Supprimer cette expérience</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeExperience(button) {
+            const container = document.getElementById('work-container');
+            const item = button.parentElement;
+            // Make sure we have at least one input group
+            if (container.children.length > 1) {
+                container.removeChild(item);
+            }
+        }
+
+        function submitWorkExperience() {
+            const form = document.getElementById('work-form');
+            const jobTitles = Array.from(form.querySelectorAll('input[name="job_title[]"]')).map(i => i.value);
+            const companies = Array.from(form.querySelectorAll('input[name="company[]"]')).map(i => i.value);
+            const durations = Array.from(form.querySelectorAll('input[name="duration[]"]')).map(i => i.value);
+            const descriptions = Array.from(form.querySelectorAll('textarea[name="description[]"]')).map(i => i.value);
+            
+            const experiences = [];
+            for (let i = 0; i < jobTitles.length; i++) {
+                if (jobTitles[i].trim() !== '') {
+                    experiences.push({
+                        job_title: jobTitles[i],
+                        company: companies[i],
+                        duration: durations[i],
+                        description: descriptions[i]
+                    });
+                }
+            }
+            
+            // Create a hidden field with JSON value
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'content';
+            hiddenInput.value = JSON.stringify(experiences);
+            form.appendChild(hiddenInput);
+            
+            form.submit();
+        }
+        </script>
+
         <!-- Deux colonnes pour Compétences et Loisirs (conditionnelles) -->
         {% if skills is defined or section2 is defined or projects is defined %}
         <div class="two-column">
@@ -577,6 +745,74 @@
                         </div>
                     </form>
                 </div>
+                <!-- Formulaire pour éditer les compétences -->
+                <div class="edit-form" id="skills-form">
+                    <form action="./{{ name }}/update-field" method="post" id="skills-editor-form">
+                        <input type="hidden" name="field" value="skills">
+                        
+                        <div id="skills-container">
+                            {% if cv.skills %}
+                                {% for skill in cv.skills %}
+                                <div class="skill-input-group">
+                                    <input type="text" name="skills[]" value="{{ skill }}" class="skill-input">
+                                    <button type="button" onclick="removeSkill(this)" class="remove-btn">×</button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="skill-input-group">
+                                    <input type="text" name="skills[]" value="" class="skill-input">
+                                    <button type="button" onclick="removeSkill(this)" class="remove-btn">×</button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="button" onclick="addSkill()" class="add-btn">Ajouter une compétence</button>
+                        
+                        <div class="form-buttons">
+                            <button type="button" class="cancel-btn" onclick="toggleEdit('skills')">Annuler</button>
+                            <button type="button" class="save-btn" onclick="submitSkills()">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <script>
+                function addSkill() {
+                    const container = document.getElementById('skills-container');
+                    const div = document.createElement('div');
+                    div.className = 'skill-input-group';
+                    div.innerHTML = `
+                        <input type="text" name="skills[]" value="" class="skill-input">
+                        <button type="button" onclick="removeSkill(this)" class="remove-btn">×</button>
+                    `;
+                    container.appendChild(div);
+                }
+                
+                function removeSkill(button) {
+                    const container = document.getElementById('skills-container');
+                    const group = button.parentElement;
+                    // Make sure we have at least one input field
+                    if (container.children.length > 1) {
+                        container.removeChild(group);
+                    } else {
+                        group.querySelector('input').value = '';
+                    }
+                }
+                
+                function submitSkills() {
+                    const form = document.getElementById('skills-editor-form');
+                    const inputs = form.querySelectorAll('input[name="skills[]"]');
+                    const skills = Array.from(inputs).map(input => input.value).filter(val => val.trim() !== '');
+                    
+                    // Create a hidden field with JSON value
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'content';
+                    hiddenInput.value = JSON.stringify(skills);
+                    form.appendChild(hiddenInput);
+                    
+                    form.submit();
+                }
+                </script>
             </div>
             {% endif %}
 

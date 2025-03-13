@@ -15,6 +15,7 @@ import bcrypt
 from datetime import datetime, timedelta
 import secrets
 import tempfile
+import json
 
 from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
 from modules.llm_structuring import structure_cv_json
@@ -217,25 +218,39 @@ def get_cv_content(user_id: str):
 def update_cv_section(user_id: str, section: str, content: str):
     """Update a section of a user's CV"""
     # Check if CV exists
-    cv = cvs_collection.find_one({"user_id": user_id})
+    cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})
     
     if cv:
         # Update existing CV
-        cvs_collection.update_one(
-            {"user_id": user_id},
-            {
-                "$set": {
-                    section: content,
-                    "last_updated": datetime.utcnow()
+        if "sections" in cv:
+            # Modern format with nested sections
+            cvs_collection.update_one(
+                {"user_id": ObjectId(user_id)},
+                {
+                    "$set": {
+                        f"sections.{section}": content,
+                        "updated_at": datetime.utcnow()
+                    }
                 }
-            }
-        )
+            )
+        else:
+            # Legacy format
+            cvs_collection.update_one(
+                {"user_id": ObjectId(user_id)},
+                {
+                    "$set": {
+                        section: content,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
     else:
         # Create new CV with this section
         new_cv = {
-            "user_id": user_id,
-            section: content,
-            "last_updated": datetime.utcnow()
+            "user_id": ObjectId(user_id),
+            "sections": {section: content},
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
         }
         cvs_collection.insert_one(new_cv)
 
@@ -440,7 +455,55 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
     finally:
         # Clean up the temporary file
         os.unlink(temp_path)
-
+@app.post("/users/{name}/update-field", response_class=RedirectResponse)
+@app.post("/user/{name}/update-field", response_class=RedirectResponse)
+async def update_field(
+    request: Request,
+    name: str,
+    field: str = Form(...),
+    content: str = Form(...)
+):
+    logger.debug(f"Update field for user: {name}, field: {field}")
+    
+    # Check authorization
+    session_token = request.cookies.get("session_token")
+    
+    if not session_token or not is_page_owner(session_token, name):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
+    
+    # Get user
+    user = users_collection.find_one({"user_name": name})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_id = str(user["_id"])
+    
+    # Process content based on field type
+    try:
+        # For fields that need to be parsed from JSON
+        if field in ["skills", "hobbies", "work_experience", "education", "projects", "certifications", "languages"]:
+            content_data = json.loads(content)
+            update_cv_section(user_id, field, content_data)
+        else:
+            # For simple string fields
+            update_cv_section(user_id, field, content)
+    except json.JSONDecodeError:
+        # If not valid JSON, just use the raw content
+        update_cv_section(user_id, field, content)
+    
+    # Redirect
+    if request.url.path.startswith("/user/"):
+        redirect_path = f"/user/{name}"
+    else:
+        redirect_path = f"/users/{name}"
+    
+    # Add theme parameter if it exists
+    theme = request.query_params.get("theme")
+    if theme:
+        redirect_path += f"?theme={theme}"
+    
+    return RedirectResponse(url=redirect_path, status_code=303)
 # Web Routes
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
