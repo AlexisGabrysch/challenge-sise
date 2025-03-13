@@ -414,11 +414,21 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
 
             # Remove background for B&W version
             remove_background_from_pdf(temp_path, cleaned_pdf_path)
+            try:
+                # Extract text from original PDF
+                ocr_result_original = extract_text_and_first_image_from_pdf(temp_path, user["email"])
+                ocr_text_original = ocr_result_original["markdown"]
+                first_image = ocr_result_original["image"]
+            
+            except Exception as e:
+                logger.error(f"Error extracting OCR from original PDF: {e}")
+                ocr_text_original = ""
+                first_image = None
 
-            # Extract text from original PDF
-            ocr_result_original = extract_text_and_first_image_from_pdf(temp_path, user["email"])
-            ocr_text_original = ocr_result_original["markdown"]
-            first_image = ocr_result_original["image"]
+
+
+
+
             # Extract text from cleaned B&W PDF
             ocr_text_clean = extract_text_from_pdf(cleaned_pdf_path)
 
