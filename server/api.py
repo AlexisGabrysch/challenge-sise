@@ -484,6 +484,17 @@ async def api_delete_cv(name: str, authorization: str = Header(None)):
     # Delete the CV document
     result = cvs_collection.delete_one({"user_id": ObjectId(user_id)})
     
+    # Create an empty CV document with minimal information
+    # This allows the URL to still work but with no data
+    default_cv = {
+        "user_id": ObjectId(user_id),
+        "sections": {},
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "is_deleted": True  # Mark as deleted
+    }
+    cvs_collection.insert_one(default_cv)
+    
     if result.deleted_count > 0:
         return {"status": "success", "message": "CV deleted successfully"}
     else:
