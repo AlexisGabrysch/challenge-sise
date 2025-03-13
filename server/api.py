@@ -378,10 +378,10 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
 
 
 
-
 @app.post("/api/cv/{name}/upload")
 async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
     """API endpoint for uploading and processing a CV file"""
+    logger.debug(f"API Upload CV: {name}")
     
     # Extract session token from Authorization header
     session_token = None
@@ -440,8 +440,23 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
         {ocr_text_clean}
         """
 
-        # Structure CV data with LLM
-        cv_data = structure_cv_json(text_total)
+        # Structure CV data with LLM with retry logic for rate limits
+        max_retries = 5
+        retry_delay = 2  # Start with 2 seconds delay
+        
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"Attempt {attempt+1}/{max_retries} to process CV with LLM")
+                cv_data = structure_cv_json(text_total)
+                break  # Success, exit retry loop
+            except Exception as e:
+                if "429" in str(e) and attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                    logger.warning(f"Rate limited by API (429). Waiting {wait_time} seconds before retry...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    # If we've exhausted all retries or it's not a rate limit error
+                    raise
         
         # Update CV sections with extracted data
         cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})
@@ -471,12 +486,14 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
     
     except Exception as e:
         logger.error(f"Error processing CV: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing CV: {str(e)}")
+        if "429" in str(e):
+            raise HTTPException(status_code=429, detail="The service is currently experiencing high traffic. Please try again in a few minutes.")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error processing CV: {str(e)}")
     
     finally:
         # Clean up the temporary file
         os.unlink(temp_path)
-
 
 
 
