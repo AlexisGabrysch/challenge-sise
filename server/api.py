@@ -12,8 +12,7 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 from bson import ObjectId
 import bcrypt
-from datetime import datetime, timedelta
-import secrets
+from datetime import datetime
 import tempfile
 import json
 from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
@@ -67,7 +66,7 @@ client = MongoClient(MONGO_URI)
 db = client["Challenge_SISE"]  # Base de données
 users_collection = db["users"]  # Collection des utilisateurs
 cvs_collection = db["cvs"]      # Collection des CV
-sessions_collection = db["sessions"]  # Nouvelle collection pour les sessions
+# Suppression de sessions_collection
 
 # URLs for redirects
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
@@ -118,59 +117,6 @@ def authenticate_user(email: str, password: str):
         "email": user["email"]
     }
 
-def create_session(user_id: str):
-    """Create a new session for a user"""
-    token = secrets.token_hex(32)
-    expires = datetime.utcnow() + timedelta(days=30)
-    
-    session = {
-        "user_id": user_id,
-        "token": token,
-        "created_at": datetime.utcnow(),
-        "expires_at": expires
-    }
-    
-    sessions_collection.insert_one(session)
-    return token
-
-def get_user_from_session(token: str):
-    """Get user from session token"""
-    session = sessions_collection.find_one({
-        "token": token,
-        "expires_at": {"$gt": datetime.utcnow()}
-    })
-    
-    if not session:
-        return None
-    
-    user = users_collection.find_one({"_id": ObjectId(session["user_id"])})
-    if not user:
-        return None
-    
-    return {
-        "id": str(user["_id"]),
-        "name": user["user_name"],
-        "email": user["email"]
-    }
-
-def is_page_owner(token: str, username: str):
-    """Check if the current session user is the owner of a page"""
-    user = get_user_from_session(token)
-    
-    if not user:
-        return False
-    
-    return user["name"] == username
-
-async def get_current_user(request: Request):
-    """Get current user from request cookies"""
-    token = request.cookies.get("session_token")
-    
-    if not token:
-        return None
-    
-    return get_user_from_session(token)
-
 def get_or_create_user_by_name(name: str):
     """Get or create a user by name"""
     user = users_collection.find_one({"user_name": name})
@@ -188,31 +134,6 @@ def get_or_create_user_by_name(name: str):
     
     result = users_collection.insert_one(new_user)
     return str(result.inserted_id)
-
-def get_cv_content(user_id: str):
-    """Get CV content for a user"""
-    cv = cvs_collection.find_one({"user_id": user_id})
-    
-    if not cv:
-        # Create default CV
-        default_cv = {
-            "user_id": user_id,
-            "header": None,
-            "section1": None,
-            "section2": None,
-            "experience": None,
-            "education": None,
-            "skills": None,
-            "title": None,
-            "email": None,
-            "phone": None,
-            "location": None,
-            "last_updated": datetime.utcnow()
-        }
-        cvs_collection.insert_one(default_cv)
-        return default_cv
-    
-    return cv
 
 def update_cv_section(user_id: str, section: str, content: str):
     """Update a section of a user's CV"""
@@ -253,20 +174,6 @@ def update_cv_section(user_id: str, section: str, content: str):
         }
         cvs_collection.insert_one(new_cv)
 
-# Pydantic Models
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-class RegisterRequest(BaseModel):
-    name: str
-    email: str
-    password: str
-
-class CVUpdateRequest(BaseModel):
-    section: str
-    content: str
-
 # API Routes
 @app.post("/api/login")
 async def api_login(login_data: LoginRequest):
@@ -279,15 +186,11 @@ async def api_login(login_data: LoginRequest):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    # Create session
-    session_token = create_session(user["id"])
-    
-    # Return user data and token
+    # Return user data (sans session token)
     return {
         "id": user["id"],
         "name": user["name"],
-        "email": user["email"],
-        "session_token": session_token
+        "email": user["email"]
     }
 
 @app.post("/api/register")
@@ -299,21 +202,18 @@ async def api_register(register_data: RegisterRequest):
         # Create user
         user_id = create_user(register_data.name, register_data.email, register_data.password)
         
-        # Create session
-        session_token = create_session(str(user_id))
-        
-        # Return user data and token
+        # Return user data (sans session token)
         return {
             "id": str(user_id),
             "name": register_data.name,
-            "email": register_data.email,
-            "session_token": session_token
+            "email": register_data.email
         }
     
     except HTTPException as e:
         raise e
+
 @app.get("/api/cv/{name}")
-async def api_get_cv(name: str, authorization: str = Header(None)):
+async def api_get_cv(name: str):
     """API endpoint pour récupérer les données du CV"""
     logger.debug(f"API Get CV: {name}")
     
@@ -353,21 +253,13 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
                     result[field] = cv[field]
     
     return result
+
 @app.post("/api/cv/{name}/update")
-async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: str = Header(None)):
+async def api_update_cv(name: str, update_data: CVUpdateRequest):
     """API endpoint pour mettre à jour une section du CV"""
     logger.debug(f"API Update CV: {name}, Section: {update_data.section}")
     
-    # Extract session token from Authorization header
-    session_token = None
-    if authorization and authorization.startswith("Bearer "):
-        session_token = authorization[7:]  # Remove "Bearer " prefix
-    
-    # Check authorization - only page owner can update
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
-    
-    # Get user id
+    # Get user id (sans vérification de session)
     user = users_collection.find_one({"user_name": name})
     
     if not user:
@@ -381,20 +273,11 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
     return {"status": "success"}
 
 @app.post("/api/cv/{name}/upload")
-async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
+async def api_upload_cv(name: str, file: UploadFile = File(...)):
     """API endpoint for uploading and processing a CV file"""
     logger.debug(f"API Upload CV: {name}")
     
-    # Extract session token from Authorization header
-    session_token = None
-    if authorization and authorization.startswith("Bearer "):
-        session_token = authorization[7:]  # Remove "Bearer " prefix
-    
-    # Check authorization - only page owner can upload
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to upload for this user")
-    
-    # Get user
+    # Get user (sans vérification de session)
     user = users_collection.find_one({"user_name": name})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -454,6 +337,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
     finally:
         # Clean up the temporary file
         os.unlink(temp_path)
+
 @app.get("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str, theme: str = None):
@@ -470,27 +354,15 @@ async def user_page(request: Request, name: str, theme: str = None):
         # Get CV content
         cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
         
-        # Check if current user is the owner of the page
-        session_token = request.cookies.get("session_token")
-        is_owner = False
-        current_user = None
-        current_user_name = ""
-        
-        if session_token:
-            current_user = get_user_from_session(session_token)
-            if current_user:
-                current_user_name = current_user["name"]
-                is_owner = current_user["name"] == name
-        
         # Prepare template data with base info
         template_data = {
             "request": request,
             "name": name,
             "SERVER_URL": SERVER_URL,
             "CLIENT_URL": CLIENT_URL,
-            "is_owner": is_owner,
-            "logged_in": current_user is not None,
-            "current_user_name": current_user_name,
+            "is_owner": True,  # Tout le monde est propriétaire sans session
+            "logged_in": True,  # Tout le monde est connecté sans session
+            "current_user_name": name,  # Le nom d'utilisateur actuel est le nom de la page
             # Pass the entire CV document as cv
             "cv": cv_doc["sections"] if cv_doc and "sections" in cv_doc else {}
         }
@@ -638,312 +510,14 @@ async def user_page(request: Request, name: str, theme: str = None):
     except Exception as e:
         logger.error(f"Error serving user page: {e}", exc_info=True)
         return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
-# Web Routes
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    logger.debug("Root endpoint accessed")
-    # Redirecting to login page
-    return RedirectResponse(url="/login", status_code=303)
 
-@app.get("/login", response_class=RedirectResponse)
-async def login_page(request: Request, error: str = None):
-    logger.debug("Login page accessed - redirecting to client app")
-    
-    # Check if user is already logged in
-    current_user = await get_current_user(request)
-    
-    if current_user:
-        # If already logged in, redirect to their page
-        return RedirectResponse(url=f"/user/{current_user['name']}", status_code=303)
-    
-    # Redirect to the Streamlit client login page instead of showing an HTML template
+# Web Routes
+@app.get("/", response_class=RedirectResponse)
+async def root():
+    logger.debug("Root endpoint accessed")
+    # Redirecting to client app
     return RedirectResponse(url=f"{CLIENT_URL}", status_code=303)
 
-@app.post("/login", response_class=RedirectResponse)
-async def login(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    logger.debug("Login attempt")
-    
-    # Authenticate user
-    user = authenticate_user(email, password)
-    
-    if not user:
-        logger.debug("Login failed")
-        return RedirectResponse(url="/login?error=Invalid+email+or+password", status_code=303)
-    
-    # Create session
-    session_token = create_session(user["id"])
-    
-    # Create response with redirect
-    response = RedirectResponse(url=f"/user/{user['name']}", status_code=303)
-    
-    # Set cookie
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        max_age=30*24*60*60,  # 30 days
-        path="/"
-    )
-    
-    return response
-
-@app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request, error: str = None):
-    logger.debug("Register page accessed")
-    
-    # Check if user is already logged in
-    current_user = await get_current_user(request)
-    
-    if current_user:
-        # If already logged in, redirect to their page
-        return RedirectResponse(url=f"/user/{current_user['name']}", status_code=303)
-    
-    return templates.TemplateResponse(
-        "register.html", 
-        {
-            "request": request,
-            "error": error
-        }
-    )
-
-@app.post("/register", response_class=RedirectResponse)
-async def register(
-    request: Request,
-    name: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    password_confirm: str = Form(...)
-):
-    logger.debug("Register attempt")
-    
-    # Validate passwords match
-    if password != password_confirm:
-        return RedirectResponse(url="/register?error=Passwords+do+not+match", status_code=303)
-    
-    try:
-        # Create user
-        user_id = create_user(name, email, password)
-        
-        # Create session
-        session_token = create_session(str(user_id))
-        
-        # Create response with redirect
-        response = RedirectResponse(url=f"/user/{name}", status_code=303)
-        
-        # Set cookie
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            httponly=True,
-            max_age=30*24*60*60,  # 30 days
-            path="/"
-        )
-        
-        return response
-    
-    except HTTPException as e:
-        error_message = e.detail.replace(" ", "+")
-        return RedirectResponse(url=f"/register?error={error_message}", status_code=303)
-
-@app.get("/logout", response_class=RedirectResponse)
-async def logout():
-    logger.debug("Logout")
-    
-    # Create response with redirect to login page
-    response = RedirectResponse(url="/login", status_code=303)
-    
-    # Clear the cookie
-    response.delete_cookie(key="session_token", path="/")
-    
-    return response
-
-@app.get("/test", response_class=HTMLResponse)
-async def test(request: Request):
-    logger.debug("Test endpoint accessed")
-    return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
-
-@app.get("/users/{name}", response_class=HTMLResponse)
-@app.get("/user/{name}", response_class=HTMLResponse)
-async def user_page(request: Request, name: str, theme: str = None):
-    logger.debug(f"User page accessed for name: {name}, theme: {theme}")
-    try:
-        # Get user by username
-        user = users_collection.find_one({"user_name": name})
-        
-        if not user:
-            user_id = get_or_create_user_by_name(name)
-        else:
-            user_id = str(user["_id"])
-        # Get CV content
-        cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
-        
-        # Check if current user is the owner of the page
-        session_token = request.cookies.get("session_token")
-        is_owner = False
-        current_user = None
-        current_user_name = ""
-        
-        if session_token:
-            current_user = get_user_from_session(session_token)
-            if current_user:
-                current_user_name = current_user["name"]
-                is_owner = current_user["name"] == name
-        
-        # Prepare template data with base info
-        template_data = {
-            "request": request,
-            "name": name,
-            "SERVER_URL": SERVER_URL,
-            "CLIENT_URL": CLIENT_URL,
-            "is_owner": is_owner,
-            "logged_in": current_user is not None,
-            "current_user_name": current_user_name
-        }
-        
-        # No default values - only pass sections that exist in CV
-        if cv_doc and "sections" in cv_doc:
-            cv = cv_doc["sections"]
-            
-            # Map MongoDB document structure to template fields
-            
-            # Header (full name)
-            if "first_name" in cv and "last_name" in cv:
-                template_data["header"] = f"{cv['first_name']} {cv['last_name']}"
-            elif "first_name" in cv:
-                template_data["header"] = cv['first_name']
-            elif "last_name" in cv:
-                template_data["header"] = cv['last_name']
-            else:
-                template_data["header"] = name
-                
-            # Section 1 (About)
-            if "summary" in cv:
-                template_data["section1"] = cv["summary"]
-                
-            # Contact information
-            if "email" in cv:
-                template_data["email"] = cv["email"]
-                
-            if "phone" in cv:
-                template_data["phone"] = cv["phone"]
-                
-            if "address" in cv:
-                template_data["location"] = cv["address"]
-            
-            # Professional title
-            if "job_title" in cv and cv["job_title"]:
-                template_data["title"] = cv["job_title"]
-            elif "work_experience" in cv and cv["work_experience"] and len(cv["work_experience"]) > 0:
-                template_data["title"] = cv["work_experience"][0]["job_title"]
-            
-            # Work Experience
-            if "work_experience" in cv and cv["work_experience"]:
-                experience_html = ""
-                for exp in cv["work_experience"]:
-                    experience_html += f'''
-                    <div class="timeline-item">
-                        <div class="date">{exp.get("duration", "")}</div>
-                        <h3 class="timeline-title">{exp.get("job_title", "")}</h3>
-                        <div class="organization">{exp.get("company", "")}</div>
-                        <p class="description">{exp.get("description", "")}</p>
-                    </div>
-                    '''
-                template_data["experience"] = experience_html
-            
-            # Education
-            if "education" in cv and cv["education"]:
-                education_html = ""
-                for edu in cv["education"]:
-                    education_html += f'''
-                    <div class="timeline-item">
-                        <div class="date">{edu.get("year", "")}</div>
-                        <h3 class="timeline-title">{edu.get("degree", "")}</h3>
-                        <div class="organization">{edu.get("school", "")}</div>
-                        <p class="description">{edu.get("details", "")}</p>
-                    </div>
-                    '''
-                template_data["education"] = education_html
-            
-            # Skills
-            if "skills" in cv and cv["skills"]:
-                skills_html = ""
-                for skill in cv["skills"]:
-                    skills_html += f'<div class="skill-tag">{skill}</div>\n'
-                template_data["skills"] = skills_html
-            
-            # Languages
-            languages_html = ""
-            if "languages" in cv and cv["languages"]:
-                languages_html += '<div class="languages-list">\n'
-                for lang, level in cv["languages"].items():
-                    languages_html += f'''
-                    <div class="language-item">
-                        <span class="language-name">{lang}</span>
-                        <span class="language-level">({level})</span>
-                    </div>
-                    '''
-                languages_html += '</div>\n'
-            # Hobbies
-            hobbies_html = ""
-            if "hobbies" in cv and cv["hobbies"]:
-                hobbies_html += '<div class="hobbies-list">\n'
-                for hobby in cv["hobbies"]:
-                    hobbies_html += f'''
-                    <div class="hobby-item">
-                        <span>{hobby}</span>
-                    </div>
-                    '''
-                hobbies_html += '</div>\n'
-            
-            # Certifications
-            certifications_html = ""
-            if "certifications" in cv and cv["certifications"]:
-                certifications_html += '<div class="certifications-list">\n'
-                for cert in cv["certifications"]:
-                    certifications_html += f'<div class="certification-item">{cert}</div>\n'
-                certifications_html += '</div>\n'
-            
-            # Combine languages, hobbies, certifications into section2
-            combined_html = ""
-            if languages_html:
-                combined_html += f'<h3 class="subsection-title">Langues</h3>\n{languages_html}\n'
-            if hobbies_html:
-                combined_html += f'<h3 class="subsection-title">Centres d\'intérêt</h3>\n{hobbies_html}\n'
-            if certifications_html:
-                combined_html += f'<h3 class="subsection-title">Certifications</h3>\n{certifications_html}\n'
-            
-            if combined_html:
-                template_data["section2"] = combined_html
-            
-            # Projects (if any)
-            if "projects" in cv and cv["projects"]:
-                projects_html = ""
-                for project in cv["projects"]:
-                    projects_html += f'''
-                    <div class="project-item">
-                        <h3 class="project-title">{project.get("title", "")}</h3>
-                        <div class="project-type">{project.get("type", "")}</div>
-                        <p class="project-description">{project.get("description", "")}</p>
-                    </div>
-                    '''
-                template_data["projects"] = projects_html
-                
-            # Other potential sections
-            if "driving_license" in cv and cv["driving_license"]:
-                template_data["driving_license"] = cv["driving_license"]
-                
-        # Select template based on theme
-        template_name = "user_template_ats.html" if theme == "ats" else "user_template.html"
-        
-        return templates.TemplateResponse(template_name, template_data)
-        
-    except Exception as e:
-        logger.error(f"Error serving user page: {e}")
-        return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
 @app.post("/users/{name}/update", response_class=RedirectResponse)
 @app.post("/user/{name}/update", response_class=RedirectResponse)
 async def update_content(
@@ -954,13 +528,7 @@ async def update_content(
 ):
     logger.debug(f"Update content for user: {name}, section: {section}")
     
-    # Check authorization - only page owner can update
-    session_token = request.cookies.get("session_token")
-    
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
-    
-    # Get user
+    # Get user (sans vérification de session)
     user = users_collection.find_one({"user_name": name})
     
     if not user:
@@ -988,13 +556,7 @@ async def update_field(
 ):
     logger.debug(f"Update field for user: {name}, field: {field}")
     
-    # Check authorization
-    session_token = request.cookies.get("session_token")
-    
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
-    
-    # Get user
+    # Get user (sans vérification de session)
     user = users_collection.find_one({"user_name": name})
     
     if not user:
