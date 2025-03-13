@@ -607,8 +607,9 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["header"] = name
             
             # Pass image data to template if it exists
-            if "image_base64" in cv:
-                template_data["cv"]["image_base64"] = cv["image"]["image_base64"]
+            if "image" in cv:
+                img  = cv["image"]
+                template_data["cv"]["image_base64"] = img["image_base64"]
 
 
             # Section 1 (About)
