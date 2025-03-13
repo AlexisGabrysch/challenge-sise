@@ -2,8 +2,6 @@ import streamlit as st
 from streamlit.components.v1 import html
 import os
 import sys
-import mysql.connector
-from mysql.connector import Error
 import requests
 import json
 from typing import Optional, Dict, Any
@@ -164,6 +162,27 @@ def upload_cv_file(username: str, file) -> bool:
     except Exception as e:
         return False, f"Error uploading CV: {str(e)}"
 
+# Add this function after the upload_cv_file function
+def delete_cv(username: str) -> tuple:
+    """Delete the user's CV via the server API"""
+    try:
+        response = requests.delete(
+            f"{SERVER_URL}/api/cv/{username}/delete",
+            headers={"Authorization": f"Bearer {st.session_state.session_token}"}
+        )
+        
+        if response.status_code == 200:
+            return True, "CV deleted successfully"
+        else:
+            error_detail = "Unknown error"
+            try:
+                error_detail = response.json().get("detail", "Unknown error")
+            except:
+                pass
+            return False, f"Error deleting CV: {error_detail}"
+    except Exception as e:
+        return False, f"Error deleting CV: {str(e)}"
+
 def show_login_page():
     st.title("Login")
     
@@ -288,12 +307,31 @@ def show_user_profile():
             st.session_state.page = PAGE_EDIT_CV
             st.rerun()
     
+    # Add delete CV button with confirmation
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #d32f2f;'>Danger Zone</h3>", unsafe_allow_html=True)
+    
+    with st.expander("Delete My CV"):
+        st.warning("Warning: This action cannot be undone. Your CV data will be permanently deleted.")
+        if st.button("Delete CV Permanently", key="delete_cv_btn"):
+            with st.spinner("Deleting your CV..."):
+                success, message = delete_cv(username)
+                if success:
+                    st.success(message)
+                    st.info("Your CV has been deleted. You'll be redirected to your profile in 3 seconds...")
+                    st.markdown(f"""
+                    <meta http-equiv="refresh" content="3; url={SERVER_URL}/user/{username}">
+                    """, unsafe_allow_html=True)
+                else:
+                    st.error(message)
+    
     # Ajouter le lien vers le CV public
     show_public_cv_link(username)
     
     if st.button("Logout", key="logout_btn_profile"):
         logout()
         st.rerun()
+
 def show_view_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
@@ -353,6 +391,7 @@ def show_view_cv():
         if st.button("Edit CV", key="edit_cv_btn_view"):
             st.session_state.page = PAGE_EDIT_CV
             st.rerun()
+
 def show_edit_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN

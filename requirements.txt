@@ -1,7 +1,0 @@
-streamlit
-fastapi
-uvicorn
-jinja2
-mysql-connector-python
-python-multipart
-mistralai
