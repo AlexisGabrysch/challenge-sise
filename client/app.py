@@ -4,7 +4,7 @@ import os
 import requests
 import json
 from typing import Optional, Dict, Any
-
+import pyperclip
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
@@ -197,6 +197,7 @@ def update_cv_image(username: str, file) -> tuple:
     try:
         # Convert image to base64
         import base64
+
         file_bytes = file.getvalue()
         base64_image = base64.b64encode(file_bytes).decode('utf-8')
         
@@ -438,14 +439,12 @@ def show_user_profile():
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
         if st.button("Copy Public CV URL"):
-            st.write(f"Copied to clipboard: {public_cv_url}")
+            pyperclip.copy(public_cv_url)
             st.session_state.copied_url = public_cv_url
-        
+
         if "copied_url" in st.session_state:
             st.success(f"Copied to clipboard: {st.session_state.copied_url}")
-        
         st.markdown(f"""
         <div style="text-align: center;">
             <a href="{public_cv_url}" target="_blank" style="text-decoration: none;">
@@ -752,17 +751,12 @@ def show_edit_cv():
     # Link to public CV
     show_public_cv_link(username)
     
-    # Navigation buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Back to Profile", key="back_to_profile_btn_edit"):
-            st.session_state.page = PAGE_USER_PROFILE
-            st.rerun()
+   
+    if st.button("Back to Profile", key="back_to_profile_btn_edit"):
+        st.session_state.page = PAGE_USER_PROFILE
+        st.rerun()
+
     
-    with col2:
-        if st.button("View CV", key="view_cv_btn_edit"):
-            st.session_state.page = PAGE_VIEW_CV
-            st.rerun()
     footer()
 def main():
     # Sidebar avec le nom de l'app
