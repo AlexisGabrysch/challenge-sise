@@ -42,7 +42,7 @@ docker build -t cvvision .
 
 ### 3) Lancer le conteneur
 ```bash
-docker run -p 8501:8501 cv-web-generator
+docker run -p 8501:8501 cvvision
 ```
 
 ## 📩 Contact & Feedback  
