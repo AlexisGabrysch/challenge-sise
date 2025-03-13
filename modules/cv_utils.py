@@ -6,10 +6,11 @@ client = MongoClient(MONGO_URI)
 
 # 📌 Sélection de la base de données et collection
 db = client["Challenge_SISE"]
-cv_collection = db["cvs"]
+fr_cv_collection = db["cv_fr"]
+en_cv_collection = db["cv_en"]
 user_collection = db["users"]
 
-def add_cv_to_user(email: str, cv_data: dict):
+def add_cv_to_user(email: str, cv_fr: dict, cv_en: dict):
     """
     Associe un CV à un utilisateur existant basé sur son email.
     """
@@ -20,12 +21,13 @@ def add_cv_to_user(email: str, cv_data: dict):
 
     user_id = user["_id"]
 
-    existing_cv = cv_collection.find_one({"user_id": user_id})
+    existing_cv = fr_cv_collection.find_one({"user_id": user_id})
     if existing_cv:
         print(f"⚠️ Un CV est déjà attribué à cet utilisateur.")
         return False
 
-    cv_data["user_id"] = user_id  # Associer le CV à l'utilisateur
-    cv_collection.insert_one(cv_data)
+    # Associer le CV original et sa traduction à l'utilisateur
+    fr_cv_collection.insert_one(cv_fr)
+    en_cv_collection.insert_one(cv_en)
     print(f"✅ CV attribué à {email} avec succès !")
     return True

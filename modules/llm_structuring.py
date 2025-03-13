@@ -108,4 +108,48 @@ If none is available, generate a concise two-line summary that effectively highl
                 raise
 
     response_dict = json.loads(chat_response.choices[0].message.content)
-    return response_dict
+
+    # Translate the OCR text
+    for attempt in range(max_retries):
+        try:
+            translation_response = client.chat.complete(
+                model="ministral-8b-latest",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f'''
+    Translate the following json in english if it is in french or in french if it is in english.
+    The structure of the json must be kept intact.
+    You should only add one "original_language" field to the json which takes "fr" or "en".
+    <BEGIN_TEXT>
+    {response_dict}
+    <END_TEXT>
+    '''
+                    },
+                ],
+                response_format={"type": "text"},
+                temperature=0
+            )
+            break
+        
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                raise
+
+    translated_dict = json.loads(translation_response.choices[0].message.content)
+    print(translated_dict)
+
+    if translated_dict['original_language'] == 'fr':
+        cv_fr = response_dict
+        cv_en = translated_dict
+    else:
+        cv_fr = translated_dict
+        cv_en = response_dict
+
+    return cv_fr, cv_en
+
+
+# TODO: ECRIRE UNE SECTION ABOUT ET UNE LIGNE DEFINISSANT LE POSTE ACTUEL

@@ -55,12 +55,12 @@ def process_user_and_cv(email, password, user_name, pdf_path):
     """
 
     print("🤖 Structuration du CV avec Mistral-8B...")
-    structured_cv = structure_cv_json(combined_text)  # On envoie **uniquement le texte** au LLM
+    cv_fr, cv_en = structure_cv_json(combined_text)
+    print(cv_fr)
 
     print(f"💾 Enregistrement du CV et de la première image dans MongoDB Atlas...")
-    structured_cv["image"] = first_image  # On stocke **uniquement la première image trouvée**
-
-    success = add_cv_to_user(email, structured_cv)
+    cv_fr["image"] = first_image  # On stocke **uniquement la première image trouvée**
+    success = add_cv_to_user(email, cv_fr, cv_en)
 
     if success:
         print("🚀 CV et image enregistrés avec succès !")
