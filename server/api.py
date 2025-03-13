@@ -248,7 +248,7 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
     email = get_or_create_content(user_id, "email", f"{name}@example.com")
     phone = get_or_create_content(user_id, "phone", "06 12 34 56 78")
     location = get_or_create_content(user_id, "location", "Paris, France")
-    linkedin = get_or_create_content(user_id, "linkedin", "linkedin.com/in/"+name)
+ 
     
     # Return CV data with all sections
     return {
@@ -263,7 +263,7 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
         "email": email,
         "phone": phone,
         "location": location,
-        "linkedin": linkedin
+
     }
 
 @app.post("/api/cv/{name}/update")
@@ -482,7 +482,6 @@ async def user_page(request: Request, name: str):
         email = get_or_create_content(user_id, "email", f"{name}@example.com")
         phone = get_or_create_content(user_id, "phone", "06 12 34 56 78")
         location = get_or_create_content(user_id, "location", "Paris, France")
-        linkedin = get_or_create_content(user_id, "linkedin", f"linkedin.com/in/{name}")
         
         # Check if current user is the owner of the page
         session_token = request.cookies.get("session_token")
@@ -506,7 +505,6 @@ async def user_page(request: Request, name: str):
                 "email": email,
                 "phone": phone,
                 "location": location,
-                "linkedin": linkedin,
                 "section1": section1_content, 
                 "section2": section2_content,
                 "experience": experience,
