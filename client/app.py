@@ -4,11 +4,15 @@ import os
 import requests
 import json
 from typing import Optional, Dict, Any
+import base64
+from datetime import datetime
+import time
 
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
 # Définir les pages de l'application
+PAGE_HOME = "home"  # Nouvelle page d'accueil
 PAGE_LOGIN = "login"
 PAGE_REGISTER = "register"
 PAGE_USER_PROFILE = "profile"
@@ -17,13 +21,45 @@ PAGE_VIEW_CV = "view_cv"
 
 # Initialiser l'état de session
 if "page" not in st.session_state:
-    st.session_state.page = PAGE_LOGIN
+    st.session_state.page = PAGE_HOME  # Changer la page par défaut à HOME
 
 if "user" not in st.session_state:
     st.session_state.user = None
 
 if "session_token" not in st.session_state:
     st.session_state.session_token = None
+
+# Fonction pour charger une image locale et la convertir en base64
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+# Fonction pour définir un arrière-plan personnalisé
+def set_background(png_file):
+    try:
+        bin_str = get_base64_of_bin_file(png_file)
+        page_bg_img = '''
+        <style>
+        .stApp {
+            background-image: url("data:image/png;base64,%s");
+            background-size: cover;
+        }
+        </style>
+        ''' % bin_str
+        st.markdown(page_bg_img, unsafe_allow_html=True)
+    except:
+        # Si l'image n'est pas disponible, utiliser une couleur de fond dégradée
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
 def set_page(page: str):
     """Change la page actuelle"""
@@ -582,18 +618,403 @@ def show_edit_cv():
             st.session_state.page = PAGE_VIEW_CV
             st.rerun()
 
-def main():
-    # Sidebar avec le nom de l'app
-    st.sidebar.title("CV Manager")
+def show_home_page():
+    """Nouvelle page d'accueil moderne et business-orientée"""
     
-    if st.session_state.user:
-        st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
-        if st.sidebar.button("Logout", key="logout_btn_sidebar"):
-            logout()
+    # CSS personnalisé pour la page d'accueil
+    st.markdown("""
+    <style>
+    .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .hero-section {
+        text-align: center;
+        padding: 60px 20px;
+        border-radius: 10px;
+        margin-bottom: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: white;
+        text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 30px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .feature-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 50px;
+    }
+    
+    .feature-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        width: 300px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        text-align: center;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .feature-icon {
+        font-size: 40px;
+        margin-bottom: 20px;
+        color: #4285F4;
+    }
+    
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .feature-text {
+        font-size: 1rem;
+        color: #555;
+        line-height: 1.6;
+    }
+    
+    .cta-container {
+        text-align: center;
+        margin: 40px 0;
+    }
+    
+    .cta-button {
+        display: inline-block;
+        padding: 15px 30px;
+        background-color: #4285F4;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-radius: 50px;
+        text-decoration: none;
+        margin: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        border: none;
+    }
+    
+    .cta-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .cta-button.secondary {
+        background-color: transparent;
+        border: 2px solid white;
+    }
+    
+    .testimonial-section {
+        padding: 40px 0;
+    }
+    
+    .testimonial-heading {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 30px;
+        color: white;
+    }
+    
+    .testimonial-card {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        margin: 15px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .testimonial-text {
+        font-style: italic;
+        font-size: 1.1rem;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    
+    .testimonial-author {
+        font-weight: 600;
+        color: #4285F4;
+    }
+    
+    .animated {
+        opacity: 0;
+        animation: fadeInUp 1s forwards;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .delay-1 {
+        animation-delay: 0.3s;
+    }
+    
+    .delay-2 {
+        animation-delay: 0.6s;
+    }
+    
+    .delay-3 {
+        animation-delay: 0.9s;
+    }
+    
+    .stats-container {
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        margin: 50px 0;
+    }
+    
+    .stat-item {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 0 15px;
+        width: 200px;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 10px;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .footer {
+        text-align: center;
+        padding: 30px 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+    
+    /* Pour masquer le header Streamlit et les autres éléments */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Contenu de la page
+    st.markdown("""
+    <div class="main-container">
+        <div class="hero-section animated">
+            <h1 class="hero-title">Créez Votre CV Professionnel avec l'IA</h1>
+            <p class="hero-subtitle">Boostez votre visibilité en ligne avec un portfolio 100% optimisé par l'intelligence artificielle</p>
+        </div>
+        
+        <div class="feature-container">
+            <div class="feature-card animated delay-1">
+                <div class="feature-icon">🚀</div>
+                <h3 class="feature-title">Création Instantanée</h3>
+                <p class="feature-text">Téléchargez votre ancien CV ou commencez de zéro. Notre IA analyse et structure votre profil en quelques secondes.</p>
+            </div>
+            
+            <div class="feature-card animated delay-2">
+                <div class="feature-icon">✨</div>
+                <h3 class="feature-title">Design Professionnel</h3>
+                <p class="feature-text">Des templates modernes et adaptés à votre secteur d'activité pour vous démarquer auprès des recruteurs.</p>
+            </div>
+            
+            <div class="feature-card animated delay-3">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Optimisation ATS</h3>
+                <p class="feature-text">Votre CV est optimisé pour les systèmes de suivi des candidatures utilisés par plus de 90% des entreprises.</p>
+            </div>
+        </div>
+        
+        <div class="stats-container animated delay-2">
+            <div class="stat-item">
+                <div class="stat-number">85%</div>
+                <div class="stat-label">Taux de succès en entretien</div>
+            </div>
+            
+            <div class="stat-item">
+                <div class="stat-number">3X</div>
+                <div class="stat-label">Plus de réponses positives</div>
+            </div>
+            
+            <div class="stat-item">
+                <div class="stat-number">24h</div>
+                <div class="stat-label">CV prêt en moins de</div>
+            </div>
+        </div>
+        
+        <div class="cta-container animated delay-3">
+            <button class="cta-button" id="register-button">Créer Mon CV Gratuitement</button>
+            <button class="cta-button secondary" id="login-button">Me Connecter</button>
+        </div>
+        
+        <div class="testimonial-section">
+            <h2 class="testimonial-heading animated">Ils ont transformé leur carrière</h2>
+            
+            <div style="display: flex; overflow-x: auto; padding: 10px 0;">
+                <div class="testimonial-card animated delay-1">
+                    <p class="testimonial-text">"Grâce à CV Manager, j'ai décroché un entretien chez Google après 3 mois de recherche infructueuse."</p>
+                    <p class="testimonial-author">— Marie L., Développeuse Full Stack</p>
+                </div>
+                
+                <div class="testimonial-card animated delay-2">
+                    <p class="testimonial-text">"L'optimisation par IA a parfaitement mis en valeur mon parcours atypique. Les recruteurs me contactent désormais directement."</p>
+                    <p class="testimonial-author">— Thomas B., Consultant en Transition Numérique</p>
+                </div>
+                
+                <div class="testimonial-card animated delay-3">
+                    <p class="testimonial-text">"Un outil indispensable pour les jeunes diplômés comme moi qui n'ont pas beaucoup d'expérience à mettre en avant."</p>
+                    <p class="testimonial-author">— Camille D., Ingénieure débutante</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            © 2024 CV Manager | Propulsé par l'IA | Tous droits réservés
+        </div>
+    </div>
+    
+    <script>
+        // Animation des statistiques (compteur)
+        document.addEventListener('DOMContentLoaded', function() {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(elem => {
+                const finalValue = elem.innerText;
+                elem.innerText = '0';
+                setTimeout(() => {
+                    animateValue(elem, 0, finalValue, 1500);
+                }, 1200);
+            });
+        });
+        
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = end.includes('%') ? 
+                    Math.floor(progress * parseInt(end)) + '%' :
+                    end.includes('X') ?
+                    Math.floor(progress * parseInt(end)) + 'X' :
+                    end;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // Navigation buttons
+        document.getElementById('register-button').addEventListener('click', function() {
+            window.parent.postMessage({type: 'streamlit:setComponentValue', value: 'register'}, '*');
+        });
+        
+        document.getElementById('login-button').addEventListener('click', function() {
+            window.parent.postMessage({type: 'streamlit:setComponentValue', value: 'login'}, '*');
+        });
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Gestion des clics sur les boutons (puisque le JavaScript ne peut pas directement changer la page)
+    component_value = st.session_state.get('component_value', None)
+    if component_value == 'register':
+        st.session_state.page = PAGE_REGISTER
+        st.rerun()
+    elif component_value == 'login':
+        st.session_state.page = PAGE_LOGIN
+        st.rerun()
+    
+    # Actions alternatives pour les boutons (au cas où le JS ne fonctionne pas)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Créer mon CV", key="register_alt_btn"):
+            st.session_state.page = PAGE_REGISTER
             st.rerun()
+    with col2:
+        if st.button("Me connecter", key="login_alt_btn"):
+            st.session_state.page = PAGE_LOGIN
+            st.rerun()
+
+# Mise à jour de la fonction principale pour inclure la page d'accueil
+def main():
+    # Essayer de définir un arrière-plan
+    try:
+        # Pour un fond d'image, vous pouvez créer un dossier 'assets' et y mettre une image
+        # set_background("assets/background.png")
+        
+        # Ou utiliser un fond de couleur dégradée
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+                background-attachment: fixed;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    except:
+        pass
+    
+    # Masquer les éléments Streamlit par défaut sur la page d'accueil
+    if st.session_state.page == PAGE_HOME:
+        st.markdown("""
+            <style>
+            #MainMenu {visibility: hidden;}
+            header {visibility: hidden;}
+            footer {visibility: hidden;}
+            </style>
+            """, unsafe_allow_html=True)
+    
+    # Sidebar avec le nom de l'app (sauf sur la page d'accueil)
+    if st.session_state.page != PAGE_HOME:
+        st.sidebar.title("CV Manager")
+        
+        if st.session_state.user:
+            st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
+            if st.sidebar.button("Logout", key="logout_btn_sidebar"):
+                logout()
+                st.rerun()
+        else:
+            if st.sidebar.button("Page d'accueil", key="home_btn_sidebar"):
+                st.session_state.page = PAGE_HOME
+                st.rerun()
     
     # Afficher la page actuelle
-    if st.session_state.page == PAGE_LOGIN:
+    if st.session_state.page == PAGE_HOME:
+        show_home_page()
+    elif st.session_state.page == PAGE_LOGIN:
         show_login_page()
     elif st.session_state.page == PAGE_REGISTER:
         show_register_page()
