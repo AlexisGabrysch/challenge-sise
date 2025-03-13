@@ -669,8 +669,6 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["cv"]["image_base64"] = cv["image_base64"]
 
                 
-
-
             # Section 1 (About)
             if "summary" in cv:
                 template_data["section1"] = cv["summary"]
@@ -788,7 +786,12 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["driving_license"] = cv["driving_license"]
                 
         # Select template based on theme
-        template_name = "user_template_ats.html" if theme == "ats" else "user_template.html"
+        if theme == "ats":
+            template_name = "user_template_ats.html"
+        elif theme == "cyberpunk":
+            template_name = "user_template_cyberpunk.html"
+        else:
+            template_name = "user_template.html"
         
         return templates.TemplateResponse(template_name, template_data)
         
@@ -922,209 +925,7 @@ async def logout():
 async def test(request: Request):
     logger.debug("Test endpoint accessed")
     return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
-@app.get("/users/{name}", response_class=HTMLResponse)
-@app.get("/user/{name}", response_class=HTMLResponse)
-async def user_page(request: Request, name: str, theme: str = None):
-    logger.debug(f"User page accessed for name: {name}, theme: {theme}")
-    try:
-        # Get user by username
-        user = users_collection.find_one({"user_name": name})
-        
-        if not user:
-            user_id = get_or_create_user_by_name(name)
-        else:
-            user_id = str(user["_id"])
-        
-        # Get CV content
-        cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
-        
-        # Check if current user is the owner of the page
-        session_token = request.cookies.get("session_token")
-        is_owner = False
-        current_user = None
-        current_user_name = ""
-        
-        if session_token:
-            current_user = get_user_from_session(session_token)
-            if current_user:
-                current_user_name = current_user["name"]
-                is_owner = current_user["name"] == name
-        
-        # Prepare template data with base info
-        template_data = {
-            "request": request,
-            "name": name,
-            "SERVER_URL": SERVER_URL,
-            "CLIENT_URL": CLIENT_URL,
-            "is_owner": is_owner,
-            "logged_in": current_user is not None,
-            "current_user_name": current_user_name,
-            # Pass the entire CV document as cv
-            "cv": cv_doc["sections"] if cv_doc and "sections" in cv_doc else {}
-        }
-        
-        # Also add the traditional data format for backwards compatibility
-        if cv_doc and "sections" in cv_doc:
-            cv = cv_doc["sections"]
-            
-            # Map MongoDB document structure to template fields
-            
-       # Header (full name)
-            if "first_name" in cv and "last_name" in cv:
-                template_data["header"] = f"{cv['first_name']} {cv['last_name']}"
-            elif "first_name" in cv:
-                template_data["header"] = cv['first_name']
-            elif "last_name" in cv:
-                template_data["header"] = cv['last_name']
-            else:
-                template_data["header"] = name
 
-            if "image" in cv:
-                img = cv["image"]
-                if img and isinstance(img, dict) and "image_base64" in img:
-                    template_data["cv"]["image_base64"] = img["image_base64"]
-                elif img and isinstance(img, str):
-                    # Si l'image est déjà une chaîne base64
-                    template_data["cv"]["image_base64"] = img
-                else:
-                    # S'assurer que template_data["cv"] existe
-                    if "cv" not in template_data:
-                        template_data["cv"] = {}
-                    template_data["cv"]["image_base64"] = None
-            elif "image_base64" in cv:  # Vérifier aussi directement pour image_base64
-                template_data["cv"] = template_data.get("cv", {})
-                template_data["cv"]["image_base64"] = cv["image_base64"]
-
-                
-            # Section 1 (About)
-            if "summary" in cv:
-                template_data["section1"] = cv["summary"]
-                
-            # Contact information
-            if "email" in cv:
-                template_data["email"] = cv["email"]
-                
-            if "phone" in cv:
-                template_data["phone"] = cv["phone"]
-                
-            if "address" in cv:
-                template_data["location"] = cv["address"]
-            
-            # Professional title
-            if "job_title" in cv and cv["job_title"]:
-                template_data["title"] = cv["job_title"]
-            elif "work_experience" in cv and cv["work_experience"] and len(cv["work_experience"]) > 0:
-                template_data["title"] = cv["work_experience"][0]["job_title"]
-            
-            # Work Experience
-            if "work_experience" in cv and cv["work_experience"]:
-                experience_html = ""
-                for exp in cv["work_experience"]:
-                    experience_html += f'''
-                    <div class="timeline-item">
-                        <div class="date">{exp.get("duration", "")}</div>
-                        <h3 class="timeline-title">{exp.get("job_title", "")}</h3>
-                        <div class="organization">{exp.get("company", "")}</div>
-                        <p class="description">{exp.get("description", "")}</p>
-                    </div>
-                    '''
-                template_data["experience"] = experience_html
-            
-            # Education
-            if "education" in cv and cv["education"]:
-                education_html = ""
-                for edu in cv["education"]:
-                    education_html += f'''
-                    <div class="timeline-item">
-                        <div class="date">{edu.get("year", "")}</div>
-                        <h3 class="timeline-title">{edu.get("degree", "")}</h3>
-                        <div class="organization">{edu.get("school", "")}</div>
-                        <p class="description">{edu.get("details", "")}</p>
-                    </div>
-                    '''
-                template_data["education"] = education_html
-            
-            # Skills
-            if "skills" in cv and cv["skills"]:
-                skills_html = ""
-                for skill in cv["skills"]:
-                    skills_html += f'<div class="skill-tag">{skill}</div>\n'
-                template_data["skills"] = skills_html
-            
-            # Languages
-            languages_html = ""
-            if "languages" in cv and cv["languages"]:
-                languages_html += '<div class="languages-list">\n'
-                for lang, level in cv["languages"].items():
-                    languages_html += f'''
-                    <div class="language-item">
-                        <span class="language-name">{lang}</span>
-                        <span class="language-level">({level})</span>
-                    </div>
-                    '''
-                languages_html += '</div>\n'
-            
-            # Hobbies
-            hobbies_html = ""
-            if "hobbies" in cv and cv["hobbies"]:
-                hobbies_html += '<div class="hobbies-list">\n'
-                for hobby in cv["hobbies"]:
-                    hobbies_html += f'''
-                    <div class="hobby-item">
-                        <span>{hobby}</span>
-                    </div>
-                    '''
-                hobbies_html += '</div>\n'
-            # Certifications
-            certifications_html = ""
-            if "certifications" in cv and cv["certifications"]:
-                certifications_html += '<div class="certifications-list">\n'
-                for cert in cv["certifications"]:
-                    certifications_html += f'<div class="certification-item">{cert}</div>\n'
-                certifications_html += '</div>\n'
-            
-            # Combine languages, hobbies, certifications into section2
-            combined_html = ""
-            if languages_html:
-                combined_html += f'<h3 class="subsection-title">Langues</h3>\n{languages_html}\n'
-            if hobbies_html:
-                combined_html += f'<h3 class="subsection-title">Centres d\'intérêt</h3>\n{hobbies_html}\n'
-            if certifications_html:
-                combined_html += f'<h3 class="subsection-title">Certifications</h3>\n{certifications_html}\n'
-            
-            if combined_html:
-                template_data["section2"] = combined_html
-            
-            # Projects (if any)
-            if "projects" in cv and cv["projects"]:
-                projects_html = ""
-                for project in cv["projects"]:
-                    projects_html += f'''
-                    <div class="project-item">
-                        <h3 class="project-title">{project.get("title", "")}</h3>
-                        <div class="project-type">{project.get("type", "")}</div>
-                        <p class="project-description">{project.get("description", "")}</p>
-                    </div>
-                    '''
-                template_data["projects"] = projects_html
-                
-            # Other potential sections
-            if "driving_license" in cv and cv["driving_license"]:
-                template_data["driving_license"] = cv["driving_license"]
-                
-        # Select template based on theme
-        if theme == "ats":
-            template_name = "user_template_ats.html"
-        elif theme == "cyberpunk":
-            template_name = "user_template_cyberpunk.html"
-        else:
-            template_name = "user_template.html"
-        
-        return templates.TemplateResponse(template_name, template_data)
-        
-    except Exception as e:
-        logger.error(f"Error serving user page: {e}", exc_info=True)
-        return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
