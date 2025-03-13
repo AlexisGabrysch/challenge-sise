@@ -315,16 +315,16 @@ def show_user_profile():
     
     with st.expander("Delete My CV"):
         st.warning("Warning: This action cannot be undone. Your CV data will be permanently deleted.")
-                    with st.spinner("Deleting your CV..."):
-                        success, message = delete_cv(username)
-                        if success:
-                            st.success(message)
-                            st.info("Your CV has been deleted. You'll be redirected to your profile in 3 seconds...")
-                            st.markdown(f"""
-                            <meta http-equiv="refresh" content="3; url={SERVER_URL}/user/{username}">
-                            """, unsafe_allow_html=True)
-                        else:
-                            st.error(message)
+        with st.spinner("Deleting your CV..."):
+            success, message = delete_cv(username)
+            if success:
+                st.success(message)
+                st.info("Your CV has been deleted. You'll be redirected to your profile in 3 seconds...")
+                st.markdown(f"""
+                <meta http-equiv="refresh" content="3; url={SERVER_URL}/user/{username}">
+                """, unsafe_allow_html=True)
+            else:
+                st.error(message)
     
     # Ajouter le lien vers le CV public
     show_public_cv_link(username)
