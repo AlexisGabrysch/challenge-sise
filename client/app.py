@@ -175,6 +175,22 @@ def delete_cv(username: str) -> tuple:
             return False, f"Error deleting CV: {error_detail}"
     except Exception as e:
         return False, f"Error deleting CV: {str(e)}"
+def footer():
+    # Footer avec crédits et liens
+    return st.markdown("""
+    <div style='margin-top: 30px; text-align: center;'>
+        <div style='height: 1px; background: #ddd; margin: 20px 0;'></div>
+        <div style='font-family: Arial, sans-serif; color: #666; font-size: 0.8rem;'>
+            Projet CVVision © 2025 | Développé par 
+            <a href="https://github.com/alexisgabrysch" target="_blank" style='color: #1E88E5; text-decoration: none;'>Alexis Gabrysch</a>,
+            <a href="https://github.com/Sahm269" target="_blank" style='color: #1E88E5; text-decoration: none;'>Souraya Ahmed</a>, 
+            <a href="https://github.com/maxenceLIOGIER" target="_blank" style='color: #1E88E5; text-decoration: none;'>Maxence Liogier</a>,
+            <a href="https://github.com/akremjomaa" target="_blank" style='color: #1E88E5; text-decoration: none;'>Akrem Jomaa</a>  |
+            <a href="https://github.com/alexisgabrysch/challenge-sise" target="_blank" style='color: #1E88E5; text-decoration: none;'>Repo GitHub</a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 def update_cv_image(username: str, file) -> tuple:
     """Convert image to base64 and update via the update_cv_section API"""
@@ -211,7 +227,7 @@ def show_login_page():
     if st.button("Register", key="register_btn_login"):
         st.session_state.page = PAGE_REGISTER
         st.rerun()
-
+    footer()
 def show_register_page():
     st.title("Register")
     
@@ -236,7 +252,7 @@ def show_register_page():
     if st.button("Login", key="login_btn_register"):
         st.session_state.page = PAGE_LOGIN
         st.rerun()
-
+    footer()
 def show_user_profile():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
@@ -478,7 +494,7 @@ def show_user_profile():
             logout()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
-
+    footer()
 def show_view_cv():
     if not st.session_state.user:
         st.session_state.page = PAGE_LOGIN
@@ -521,7 +537,7 @@ def show_view_cv():
     if st.button("Back to Profile", key="back_to_profile_btn_view"):
         st.session_state.page = PAGE_USER_PROFILE
         st.rerun()
-   
+    footer()
 
 def show_edit_cv():
     if not st.session_state.user:
@@ -747,7 +763,7 @@ def show_edit_cv():
         if st.button("View CV", key="view_cv_btn_edit"):
             st.session_state.page = PAGE_VIEW_CV
             st.rerun()
-
+    footer()
 def main():
     # Sidebar avec le nom de l'app
     st.sidebar.title("CV Manager")
@@ -757,7 +773,7 @@ def main():
         if st.sidebar.button("Logout", key="logout_btn_sidebar"):
             logout()
             st.rerun()
-    
+  
     # Afficher la page actuelle
     if st.session_state.page == PAGE_LOGIN:
         show_login_page()
