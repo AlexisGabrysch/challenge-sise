@@ -9,3 +9,4 @@ bcrypt
 PyMuPDF
 opencv-python-headless
 Pillow
+pdf2image
