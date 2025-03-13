@@ -613,20 +613,7 @@
         </div>
         {% endif %}
 
-        <!-- Actions de bas de page -->
-        <div class="bottom-actions">
-            {% if logged_in %}
-                {% if not is_owner %}
-                    <a href="{{ CLIENT_URL }}/user/{{ current_user_name }}" class="action-btn">Voir mon CV</a>
-                {% else %}
-                    <a href="{{ CLIENT_URL }}/logout" class="action-btn secondary-btn">Déconnexion</a>
-                {% endif %}
-            {% else %}
-                <a href="{{ CLIENT_URL }}" class="action-btn">Connexion</a>
-                <a href="{{ CLIENT_URL }}" class="action-btn secondary-btn">Créer un compte</a>
-            {% endif %}
-        </div>
-
+ 
         <!-- Pied de page -->
         <div class="footer">
             {% if is_owner %}
