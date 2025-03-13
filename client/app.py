@@ -7,6 +7,8 @@ from mysql.connector import Error
 import requests
 import json
 from typing import Optional, Dict, Any
+import io
+from PIL import Image
 
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
@@ -136,6 +138,32 @@ def show_public_cv_link(username: str):
     </div>
     """.format(public_cv_url), unsafe_allow_html=True)
 
+# Add this function to handle file uploads
+def upload_cv_file(username: str, file) -> bool:
+    """Upload and process a CV file via the server API"""
+    try:
+        # Create the multipart/form-data request
+        files = {"file": (file.name, file.getvalue(), f"application/{file.type}")}
+        
+        response = requests.post(
+            f"{SERVER_URL}/api/cv/{username}/upload",
+            headers={"Authorization": f"Bearer {st.session_state.session_token}"},
+            files=files
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            return True, data.get("message", "CV uploaded and processed successfully")
+        else:
+            error_detail = "Unknown error"
+            try:
+                error_detail = response.json().get("detail", "Unknown error")
+            except:
+                pass
+            return False, f"Error processing CV: {error_detail}"
+    except Exception as e:
+        return False, f"Error uploading CV: {str(e)}"
+
 def show_login_page():
     st.title("Login")
     
@@ -186,8 +214,68 @@ def show_user_profile():
         st.session_state.page = PAGE_LOGIN
         st.rerun()
         
-    st.title(f"Welcome, {st.session_state.user['name']}!")
+    username = st.session_state.user["name"]
+    st.title(f"Welcome, {username}!")
     
+    # Add CV upload section
+    st.header("Upload your CV")
+    
+    # Create a styled upload area
+    st.markdown("""
+    <style>
+    .uploadfile {
+        border: 2px dashed #aaa;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        margin: 10px 0;
+        background-color: #f8f9fa;
+    }
+    .uploadfile:hover {
+        border-color: #4285F4;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<p>Upload a PDF, JPEG, or PNG file of your CV:</p>", unsafe_allow_html=True)
+    
+    # File uploader
+    uploaded_file = st.file_uploader("Choose your CV file", 
+                                    type=["pdf", "jpg", "jpeg", "png"], 
+                                    key="cv_uploader",
+                                    help="Upload your CV to automatically generate your profile")
+    
+    if uploaded_file is not None:
+        # Show file details
+        file_details = {"Filename": uploaded_file.name, "File size": f"{uploaded_file.size / 1024:.2f} KB"}
+        st.write(file_details)
+        
+        # Show preview based on file type
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        
+        if file_extension in ['jpg', 'jpeg', 'png']:
+            st.image(uploaded_file, width=300, caption="Preview")
+        elif file_extension == 'pdf':
+            st.info("PDF preview not available. Click 'Process CV' to upload and process your CV.")
+        
+        # Process button
+        if st.button("Process CV"):
+            with st.spinner("Processing your CV with AI... This may take a moment."):
+                success, message = upload_cv_file(username, uploaded_file)
+                
+                if success:
+                    st.success(message)
+                    st.info("Navigating to your CV page in 3 seconds...")
+                    # Redirect to view CV after successful processing
+                    st.markdown(f"""
+                    <meta http-equiv="refresh" content="3; url={SERVER_URL}/user/{username}">
+                    """, unsafe_allow_html=True)
+                else:
+                    st.error(message)
+    
+    st.markdown("<hr>", unsafe_allow_html=True)
+    
+    # Original buttons
     col1, col2 = st.columns(2)
     
     with col1:
@@ -201,7 +289,7 @@ def show_user_profile():
             st.rerun()
     
     # Ajouter le lien vers le CV public
-    show_public_cv_link(st.session_state.user["name"])
+    show_public_cv_link(username)
     
     if st.button("Logout", key="logout_btn_profile"):
         logout()

@@ -9,6 +9,14 @@ import os
 import logging
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
+
+import tempfile
+import os
+from fastapi import UploadFile, File
+from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
+from modules.llm_structuring import structure_cv_json
+
+
 from connection import connect_to_mysql, execute_query, close_connection
 from db_setup import setup_database
 from auth import (
@@ -588,6 +596,348 @@ async def update_content(
         cursor.close()
         close_connection(conn)
 
+
+# Add these imports at the top of the file
+import tempfile
+import os
+from fastapi import UploadFile, File
+from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
+from modules.llm_structuring import structure_cv_json
+
+# Add this new endpoint to your FastAPI application
+@app.post("/api/cv/{name}/upload")
+async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
+    """API endpoint for uploading and processing a CV file"""
+    logger.debug(f"API Upload CV: {name}, File: {file.filename}")
+    
+    # Extract session token from Authorization header
+    session_token = None
+    if (authorization and authorization.startswith("Bearer ")):
+        session_token = authorization[7:]  # Remove "Bearer " prefix
+    
+    # Check authorization - only page owner can update
+    if not session_token or not is_page_owner(DB_CONFIG, session_token, name):
+        raise HTTPException(status_code=403, detail="You don't have permission to upload for this user")
+    
+    # Get user id
+    user_id = get_or_create_user(name)
+    
+    # Check file type
+    file_extension = file.filename.split('.')[-1].lower()
+    allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png']
+    
+    if file_extension not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file format: {file_extension}. Please upload PDF, JPEG, or PNG.")
+    
+    try:
+        # Save the uploaded file to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as temp_file:
+            # Read file
+            contents = await file.read()
+            temp_file.write(contents)
+            temp_file_path = temp_file.name
+            
+        # Process the file with OCR based on file type
+        if file_extension == 'pdf':
+            ocr_text = extract_text_from_pdf(temp_file_path)
+        else:  # jpg, jpeg, png
+            ocr_text = extract_text_from_image(temp_file_path)
+            
+        # Structure the CV text using Mistral
+        structured_cv = structure_cv_json(ocr_text)
+        
+        # Clean up the temporary file
+        os.unlink(temp_file_path)
+        
+        # Update CV sections in the database
+        conn = connect_to_mysql(**DB_CONFIG)
+        if not conn:
+            raise HTTPException(status_code=500, detail="Database connection error")
+            
+        try:
+            cursor = conn.cursor()
+            
+            # Map the structured CV data to our sections
+            # We'll set basic fields like header, section1, etc. based on the structured data
+            
+            # Extract name for header
+            if structured_cv.get("first_name") and structured_cv.get("last_name"):
+                header = f"{structured_cv['first_name']} {structured_cv['last_name']}"
+            else:
+                header = name.capitalize()  # Default to the username if no name found
+            
+            # Update header
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (header, user_id, "header")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "header", header)
+                )
+            
+            # Create About section (section1) from structured data
+            about_section = ""
+            
+            # Add introduction if we have educational background
+            if structured_cv.get("education"):
+                highest_edu = structured_cv["education"][0]  # Assuming education is sorted with most recent first
+                about_section += f"Professional with education in {highest_edu.get('degree', 'higher education')} "
+                about_section += f"from {highest_edu.get('school', 'a recognized institution')}. "
+                
+            # Add work experience summary
+            if structured_cv.get("work_experience"):
+                latest_job = structured_cv["work_experience"][0]  # Assuming work experience is sorted
+                about_section += f"Experienced {latest_job.get('job_title', 'professional')} "
+                about_section += f"with background at {latest_job.get('company', 'reputable organizations')}. "
+                
+            # Add skills summary
+            if structured_cv.get("skills") and len(structured_cv["skills"]) > 0:
+                about_section += f"Skilled in {', '.join(structured_cv['skills'][:5])}."
+                
+            # Update section1
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (about_section, user_id, "section1")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "section1", about_section)
+                )
+                
+            # Create hobbies/interests section (section2)
+            hobbies_html = "<div class=\"hobbies-list\">\n"
+            
+            # Add hobbies with emojis
+            hobby_emojis = {"sports": "🏃", "reading": "📚", "travel": "✈️", 
+                           "music": "🎵", "cooking": "🍳", "photography": "📷",
+                           "art": "🎨", "gaming": "🎮", "languages": "🗣️"}
+                           
+            if structured_cv.get("hobbies"):
+                for hobby in structured_cv["hobbies"]:
+                    emoji = "🔍"  # Default emoji
+                    for keyword, emoji_char in hobby_emojis.items():
+                        if keyword.lower() in hobby.lower():
+                            emoji = emoji_char
+                            break
+                            
+                    hobbies_html += f"""    <div class="hobby-item">
+        <div class="hobby-icon">{emoji}</div>
+        <span>{hobby}</span>
+    </div>\n"""
+            
+            # If no hobbies found, add languages as additional info
+            elif structured_cv.get("languages"):
+                for lang, level in structured_cv["languages"].items():
+                    hobbies_html += f"""    <div class="hobby-item">
+        <div class="hobby-icon">🗣️</div>
+        <span>{lang} ({level})</span>
+    </div>\n"""
+            
+            hobbies_html += "</div>"
+            
+            # Update section2
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (hobbies_html, user_id, "section2")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "section2", hobbies_html)
+                )
+                
+            # Create experience timeline HTML
+            experience_html = ""
+            if structured_cv.get("work_experience"):
+                for job in structured_cv["work_experience"]:
+                    experience_html += f"""<div class="timeline-item">
+    <div class="date">{job.get('duration', 'N/A')}</div>
+    <h3 class="timeline-title">{job.get('job_title', 'Role')}</h3>
+    <div class="organization">{job.get('company', 'Company')}</div>
+    <p class="description">{job.get('description', '')}</p>
+</div>\n"""
+            
+            # Update experience
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (experience_html, user_id, "experience")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "experience", experience_html)
+                )
+                
+            # Create education timeline HTML
+            education_html = ""
+            if structured_cv.get("education"):
+                for edu in structured_cv["education"]:
+                    education_html += f"""<div class="timeline-item">
+    <div class="date">{edu.get('year', 'N/A')}</div>
+    <h3 class="timeline-title">{edu.get('degree', 'Degree')}</h3>
+    <div class="organization">{edu.get('school', 'Institution')}</div>
+    <p class="description">{edu.get('details', '')}</p>
+</div>\n"""
+                
+            # Update education
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (education_html, user_id, "education")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "education", education_html)
+                )
+                
+            # Create skills HTML
+            skills_html = ""
+            if structured_cv.get("skills"):
+                for skill in structured_cv["skills"]:
+                    skills_html += f'<div class="skill-tag">{skill}</div>\n'
+                    
+            # Update skills
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (skills_html, user_id, "skills")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "skills", skills_html)
+                )
+                
+            # Update additional fields
+            # Title
+            job_title = "Professional"
+            if structured_cv.get("work_experience") and structured_cv["work_experience"]:
+                job_title = structured_cv["work_experience"][0].get("job_title", "Professional")
+                
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (job_title, user_id, "title")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "title", job_title)
+                )
+                
+            # Email
+            email_value = structured_cv.get("email", f"{name}@example.com")
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (email_value, user_id, "email")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "email", email_value)
+                )
+                
+            # Phone
+            phone_value = structured_cv.get("phone", "")
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (phone_value, user_id, "phone")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "phone", phone_value)
+                )
+                
+            # Location
+            location_value = structured_cv.get("address", "")
+            cursor.execute(
+                """
+                UPDATE contents 
+                SET content = %s, last_updated = CURRENT_TIMESTAMP 
+                WHERE user_id = %s AND section_name = %s
+                """,
+                (location_value, user_id, "location")
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
+                    (user_id, "location", location_value)
+                )
+            
+            conn.commit()
+            
+            return {
+                "status": "success", 
+                "message": f"CV processed successfully for {name}",
+                "sections_updated": ["header", "section1", "section2", "experience", "education", "skills", 
+                                   "title", "email", "phone", "location"]
+            }
+            
+        finally:
+            cursor.close()
+            close_connection(conn)
+            
+    except Exception as e:
+        logger.error(f"Error processing CV file: {str(e)}")
+        if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+        raise HTTPException(status_code=500, detail=f"Error processing CV: {str(e)}")
+
+
+
+
+
+
+
+
 # Setup database tables when the application starts
 @app.on_event("startup")
 async def startup_event():
@@ -597,6 +947,22 @@ async def startup_event():
         logger.info("Database setup complete")
     except Exception as e:
         logger.error(f"Error setting up database: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
