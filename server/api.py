@@ -267,78 +267,56 @@ class CVUpdateRequest(BaseModel):
     section: str
     content: str
 
-@app.post("/login", response_class=RedirectResponse)
-async def login(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    logger.debug("Login attempt")
-    
-    # Authenticate user
-    user = authenticate_user(email, password)
-    
-    if not user:
-        logger.debug("Login failed")
-        return RedirectResponse(url="/login?error=Invalid+email+or+password", status_code=303)
-    
-    # Create session
-    session_token = create_session(user["id"])
-    
-    # Create response with redirect
-    response = RedirectResponse(url=f"/user/{user['name']}", status_code=303)
-    
-    # Set cookie - change from 10 minutes to 30 days
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        max_age=30*24*60*60,  # 30 days in seconds (2592000 seconds)
-        path="/"
-    )
-    
-    return response
-
-@app.post("/register", response_class=RedirectResponse)
-async def register(
-    request: Request,
-    name: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    password_confirm: str = Form(...)
-):
-    logger.debug("Register attempt")
-    
-    # Validate passwords match
-    if password != password_confirm:
-        return RedirectResponse(url="/register?error=Passwords+do+not+match", status_code=303)
+@app.post("/api/register")
+async def api_register(register_request: RegisterRequest):
+    """API endpoint pour l'enregistrement"""
+    logger.debug(f"API Register attempt: {register_request.email}")
     
     try:
         # Create user
-        user_id = create_user(name, email, password)
+        user_id = create_user(
+            register_request.name, 
+            register_request.email, 
+            register_request.password
+        )
         
         # Create session
         session_token = create_session(str(user_id))
         
-        # Create response with redirect
-        response = RedirectResponse(url=f"/user/{name}", status_code=303)
-        
-        # Set cookie - change from 10 minutes to 30 days
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            httponly=True,
-            max_age=30*24*60*60,  # 30 days in seconds
-            path="/"
-        )
-        
-        return response
-    
+        # Return user data and session token
+        return {
+            "id": str(user_id),
+            "name": register_request.name,
+            "email": register_request.email,
+            "session_token": session_token
+        }
     except HTTPException as e:
-        error_message = e.detail.replace(" ", "+")
-        return RedirectResponse(url=f"/register?error={error_message}", status_code=303)
+        # Re-raise the exception to preserve status code and detail
+        raise e
     
+@app.post("/api/login")
+async def api_login(login_request: LoginRequest):
+    """API endpoint pour l'authentification"""
+    logger.debug(f"API Login attempt: {login_request.email}")
     
+    # Authenticate user
+    user = authenticate_user(login_request.email, login_request.password)
+    
+    if not user:
+        logger.debug("API Login failed")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Create session
+    session_token = create_session(user["id"])
+    
+    # Return user data and session token
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "session_token": session_token
+    }
+
 @app.get("/api/cv/{name}")
 async def api_get_cv(name: str, authorization: str = Header(None)):
     """API endpoint pour récupérer les données du CV"""
