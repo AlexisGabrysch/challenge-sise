@@ -413,7 +413,8 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
         contents = await file.read()
         temp_file.write(contents)
         temp_path = temp_file.name
-    
+    text_noir_blanc = ""
+    text_original = ""
     try:
         # Extract text based on file type
         file_extension = file.filename.split('.')[-1].lower()
@@ -438,7 +439,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
 
         # Combine text from both versions
         text = f"{text_noir_blanc}\n\n{text_original}"
-        
+
         # Structure CV data with LLM
         cv_data = structure_cv_json(text)
         
