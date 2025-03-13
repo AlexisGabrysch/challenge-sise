@@ -1,12 +1,9 @@
 import streamlit as st
 from streamlit.components.v1 import html
 import os
-import sys
 import requests
 import json
 from typing import Optional, Dict, Any
-import io
-from PIL import Image
 
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")

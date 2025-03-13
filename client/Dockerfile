@@ -13,7 +13,7 @@ COPY app.py .
 # Suppression des slashes finaux pour éviter les doubles slashes dans les URLs
 ENV SERVER_URL=https://challenge-sise-production-0bc4.up.railway.app
 ENV CLIENT_URL=https://beneficial-liberation-production.up.railway.app
-
+ENV MONGO_URL=mongodb+srv://cv_database:YnUNdP7NqfdkSRKy@challengesise.1aioj.mongodb.net/?retryWrites=true&w=majority&appName=challengeSISE
 # Exposer le port Streamlit
 EXPOSE 8501
 

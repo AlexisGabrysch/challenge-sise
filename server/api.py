@@ -67,7 +67,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 security = HTTPBasic()
 
 # MongoDB connection
-MONGO_URI = "mongodb+srv://cv_database:YnUNdP7NqfdkSRKy@challengesise.1aioj.mongodb.net/?retryWrites=true&w=majority&appName=challengeSISE"
+MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["Challenge_SISE"]  # Base de données
 users_collection = db["users"]  # Collection des utilisateurs
@@ -743,16 +743,13 @@ async def user_page(request: Request, name: str, theme: str = None):
             hobbies_html = ""
             if "hobbies" in cv and cv["hobbies"]:
                 hobbies_html += '<div class="hobbies-list">\n'
-                for i, hobby in enumerate(cv["hobbies"]):
-                    emoji = ["🏃", "📚", "✈️", "🎮", "🎸", "🎭", "🏊", "⚽", "🎨", "🎧"][i % 10]  # Cycle through emojis
+                for hobby in cv["hobbies"]:
                     hobbies_html += f'''
                     <div class="hobby-item">
-                        <div class="hobby-icon">{emoji}</div>
                         <span>{hobby}</span>
                     </div>
                     '''
                 hobbies_html += '</div>\n'
-            
             # Certifications
             certifications_html = ""
             if "certifications" in cv and cv["certifications"]:
@@ -1104,89 +1101,9 @@ async def user_page(request: Request, name: str, theme: str = None):
     except Exception as e:
         logger.error(f"Error serving user page: {e}")
         return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
-@app.post("/users/{name}/update", response_class=RedirectResponse)
-@app.post("/user/{name}/update", response_class=RedirectResponse)
-async def update_content(
-    request: Request,
-    name: str,
-    section: str = Form(...),
-    content: str = Form(...)
-):
-    logger.debug(f"Update content for user: {name}, section: {section}")
     
-    # Check authorization - only page owner can update
-    session_token = request.cookies.get("session_token")
     
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
-    
-    # Get user
-    user = users_collection.find_one({"user_name": name})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Update CV section
-    update_cv_section(str(user["_id"]), section, content)
-    
-    # Use the same path format as the request
-    if request.url.path.startswith("/user/"):
-        redirect_path = f"/user/{name}"
-    else:
-        redirect_path = f"/users/{name}"
-    
-    logger.debug(f"Redirecting to: {redirect_path}")
-    return RedirectResponse(url=redirect_path, status_code=303)
-
-@app.post("/users/{name}/update-field", response_class=RedirectResponse)
-@app.post("/user/{name}/update-field", response_class=RedirectResponse)
-async def update_field(
-    request: Request,
-    name: str,
-    field: str = Form(...),
-    content: str = Form(...)
-):
-    logger.debug(f"Update field for user: {name}, field: {field}")
-    
-    # Check authorization
-    session_token = request.cookies.get("session_token")
-    
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
-    
-    # Get user
-    user = users_collection.find_one({"user_name": name})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user_id = str(user["_id"])
-    
-    # Process content based on field type
-    try:
-        # For fields that need to be parsed from JSON
-        if field in ["skills", "hobbies", "work_experience", "education", "projects", "certifications", "languages"]:
-            content_data = json.loads(content)
-            update_cv_section(user_id, field, content_data)
-        else:
-            # For simple string fields
-            update_cv_section(user_id, field, content)
-    except json.JSONDecodeError:
-        # If not valid JSON, just use the raw content
-        update_cv_section(user_id, field, content)
-    
-    # Redirect back to the user's page
-    if request.url.path.startswith("/user/"):
-        redirect_path = f"/user/{name}"
-    else:
-        redirect_path = f"/users/{name}"
-    
-    # Add theme parameter if it exists
-    theme = request.query_params.get("theme")
-    if theme:
-        redirect_path += f"?theme={theme}"
-    
-    return RedirectResponse(url=redirect_path, status_code=303)
+   
 
 if __name__ == "__main__":
     # Get port from environment variable or use default

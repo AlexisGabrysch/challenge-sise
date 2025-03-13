@@ -12,7 +12,7 @@ from bson import ObjectId
 security = HTTPBasic()
 
 # MongoDB connection
-MONGO_URI = "mongodb+srv://cv_database:YnUNdP7NqfdkSRKy@challengesise.1aioj.mongodb.net/?retryWrites=true&w=majority&appName=challengeSISE"
+MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client["Challenge_SISE"]
 users_collection = db["users"]      # Collection of users

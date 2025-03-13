@@ -231,79 +231,6 @@
             gap: 30px;
         }
         
-        /* Boutons d'édition */
-        .edit-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: var(--transition);
-        }
-        .edit-btn {
-            display: none;
-        }
-        .edit-btn.owner {
-            display: block;
-        }
-        
-        .edit-btn:hover {
-            background-color: var(--secondary-color);
-        }
-        
-        .edit-form {
-            display: none;
-            margin-top: 20px;
-        }
-        
-        .edit-form textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            min-height: 150px;
-            font-family: inherit;
-        }
-        
-        .form-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-        
-        .save-btn, .cancel-btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .save-btn {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .cancel-btn {
-            background-color: #f8f9fa;
-            color: #333;
-            border: 1px solid #ddd;
-        }
-        
-        .save-btn:hover {
-            background-color: var(--secondary-color);
-        }
-        
-        .cancel-btn:hover {
-            background-color: #e9ecef;
-        }
-        
         .bottom-actions {
             display: flex;
             justify-content: center;
@@ -441,15 +368,13 @@
             border-bottom: 1px solid #eee;
         }
     </style>
-            <button class="edit-btn {% if is_owner %}owner{% endif %}" onclick="toggleEdit('header')">Modifier</button>
 <body>
     <div class="theme-toggle" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
         <button style="padding: 8px 15px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=ats'">Thème ATS</button>
     </div>
     <div class="container">
-                <!-- Modification du header du CV pour inclure l'image si disponible -->
+        <!-- Header du CV -->
         <div class="cv-header" id="header-section">
-            <button class="edit-btn {% if is_owner %}owner{% endif %}" onclick="toggleEdit('header')">Modifier</button>
             <div class="profile-info">
                 <h1 class="name">{{ header }}</h1>
                 {% if title is defined %}
@@ -487,76 +412,13 @@
                 {% endif %}
             </div>
             {% endif %}
-            <div class="edit-form" id="header-form">
-                <form action="./{{ name }}/update" method="post">
-                    <input type="hidden" name="section" value="header">
-                    <textarea name="content">{{ header }}</textarea>
-                    <div class="form-buttons">
-                        <button type="button" class="cancel-btn" onclick="toggleEdit('header')">Annuler</button>
-                        <button type="submit" class="save-btn">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Formulaire pour éditer les informations personnelles -->
-        <div class="edit-form" id="personal-info-form">
-            <form action="./{{ name }}/update-field" method="post">
-                <div class="form-group">
-                    <label for="first_name">Prénom</label>
-                    <input type="text" name="first_name" value="{{ cv.first_name if cv.first_name else '' }}">
-                </div>
-                <div class="form-group">
-                    <label for="last_name">Nom</label>
-                    <input type="text" name="last_name" value="{{ cv.last_name if cv.last_name else '' }}">
-                </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" name="email" value="{{ cv.email if cv.email else '' }}">
-                </div>
-                <div class="form-group">
-                    <label for="phone">Téléphone</label>
-                    <input type="text" name="phone" value="{{ cv.phone if cv.phone else '' }}">
-                </div>
-                <div class="form-group">
-                    <label for="address">Adresse</label>
-                    <input type="text" name="address" value="{{ cv.address if cv.address else '' }}">
-                </div>
-                <div class="form-group">
-                    <label for="job_title">Titre professionnel</label>
-                    <input type="text" name="job_title" value="{{ cv.job_title if cv.job_title else '' }}">
-                </div>
-                <div class="form-group">
-                    <label for="summary">À propos</label>
-                    <textarea name="summary">{{ cv.summary if cv.summary else '' }}</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="driving_license">Permis de conduire</label>
-                    <input type="text" name="driving_license" value="{{ cv.driving_license if cv.driving_license else '' }}">
-                </div>
-                <div class="form-buttons">
-                    <button type="button" class="cancel-btn" onclick="toggleEdit('personal-info')">Annuler</button>
-                    <button type="submit" class="save-btn">Enregistrer</button>
-                </div>
-            </form>
         </div>
 
         <!-- Section À Propos (conditionnelle) -->
         {% if section1 is defined %}
         <div class="section">
-            <button class="edit-btn" onclick="toggleEdit('section1')">Modifier</button>
             <h2 class="section-title">À Propos</h2>
             <div class="about-content" id="section1-content">{{ section1 }}</div>
-            <div class="edit-form" id="section1-form">
-                <form action="./{{ name }}/update" method="post">
-                    <input type="hidden" name="section" value="section1">
-                    <textarea name="content">{{ section1 }}</textarea>
-                    <div class="form-buttons">
-                        <button type="button" class="cancel-btn" onclick="toggleEdit('section1')">Annuler</button>
-                        <button type="submit" class="save-btn">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
         </div>
         {% endif %}
 
@@ -566,20 +428,9 @@
             <!-- Section Expérience Professionnelle -->
             {% if experience is defined %}
             <div class="section">
-                <button class="edit-btn" onclick="toggleEdit('experience')">Modifier</button>
                 <h2 class="section-title">Expérience Professionnelle</h2>
                 <div class="timeline" id="experience-content">
                     {{ experience|safe }}
-                </div>
-                <div class="edit-form" id="experience-form">
-                    <form action="./{{ name }}/update" method="post">
-                        <input type="hidden" name="section" value="experience">
-                        <textarea name="content">{{ experience }}</textarea>
-                        <div class="form-buttons">
-                            <button type="button" class="cancel-btn" onclick="toggleEdit('experience')">Annuler</button>
-                            <button type="submit" class="save-btn">Enregistrer</button>
-                        </div>
-                    </form>
                 </div>
             </div>
             {% endif %}
@@ -587,151 +438,14 @@
             <!-- Section Formation -->
             {% if education is defined %}
             <div class="section">
-                <button class="edit-btn" onclick="toggleEdit('education')">Modifier</button>
                 <h2 class="section-title">Formation</h2>
                 <div class="timeline" id="education-content">
                     {{ education|safe }}
-                </div>
-                <div class="edit-form" id="education-form">
-                    <form action="./{{ name }}/update" method="post">
-                        <input type="hidden" name="section" value="education">
-                        <textarea name="content">{{ education }}</textarea>
-                        <div class="form-buttons">
-                            <button type="button" class="cancel-btn" onclick="toggleEdit('education')">Annuler</button>
-                            <button type="submit" class="save-btn">Enregistrer</button>
-                        </div>
-                    </form>
                 </div>
             </div>
             {% endif %}
         </div>
         {% endif %}
-
-        <!-- Formulaire pour éditer les expériences professionnelles -->
-        <div class="edit-form" id="work-experience-form">
-            <form action="./{{ name }}/update-field" method="post" id="work-form">
-                <input type="hidden" name="field" value="work_experience">
-                
-                <div id="work-container">
-                    {% if cv.work_experience %}
-                        {% for exp in cv.work_experience %}
-                        <div class="experience-item">
-                            <div class="form-group">
-                                <label>Poste</label>
-                                <input type="text" name="job_title[]" value="{{ exp.job_title }}">
-                            </div>
-                            <div class="form-group">
-                                <label>Entreprise</label>
-                                <input type="text" name="company[]" value="{{ exp.company }}">
-                            </div>
-                            <div class="form-group">
-                                <label>Période</label>
-                                <input type="text" name="duration[]" value="{{ exp.duration }}">
-                            </div>
-                            <div class="form-group">
-                                <label>Description</label>
-                                <textarea name="description[]">{{ exp.description }}</textarea>
-                            </div>
-                            <button type="button" onclick="removeExperience(this)" class="remove-btn">Supprimer cette expérience</button>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="experience-item">
-                            <div class="form-group">
-                                <label>Poste</label>
-                                <input type="text" name="job_title[]" value="">
-                            </div>
-                            <div class="form-group">
-                                <label>Entreprise</label>
-                                <input type="text" name="company[]" value="">
-                            </div>
-                            <div class="form-group">
-                                <label>Période</label>
-                                <input type="text" name="duration[]" value="">
-                            </div>
-                            <div class="form-group">
-                                <label>Description</label>
-                                <textarea name="description[]"></textarea>
-                            </div>
-                            <button type="button" onclick="removeExperience(this)" class="remove-btn">Supprimer cette expérience</button>
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <button type="button" onclick="addExperience()" class="add-btn">Ajouter une expérience</button>
-                
-                <div class="form-buttons">
-                    <button type="button" class="cancel-btn" onclick="toggleEdit('work-experience')">Annuler</button>
-                    <button type="button" class="save-btn" onclick="submitWorkExperience()">Enregistrer</button>
-                </div>
-            </form>
-        </div>
-
-        <script>
-        function addExperience() {
-            const container = document.getElementById('work-container');
-            const div = document.createElement('div');
-            div.className = 'experience-item';
-            div.innerHTML = `
-                <div class="form-group">
-                    <label>Poste</label>
-                    <input type="text" name="job_title[]" value="">
-                </div>
-                <div class="form-group">
-                    <label>Entreprise</label>
-                    <input type="text" name="company[]" value="">
-                </div>
-                <div class="form-group">
-                    <label>Période</label>
-                    <input type="text" name="duration[]" value="">
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea name="description[]"></textarea>
-                </div>
-                <button type="button" onclick="removeExperience(this)" class="remove-btn">Supprimer cette expérience</button>
-            `;
-            container.appendChild(div);
-        }
-
-        function removeExperience(button) {
-            const container = document.getElementById('work-container');
-            const item = button.parentElement;
-            // Make sure we have at least one input group
-            if (container.children.length > 1) {
-                container.removeChild(item);
-            }
-        }
-
-        function submitWorkExperience() {
-            const form = document.getElementById('work-form');
-            const jobTitles = Array.from(form.querySelectorAll('input[name="job_title[]"]')).map(i => i.value);
-            const companies = Array.from(form.querySelectorAll('input[name="company[]"]')).map(i => i.value);
-            const durations = Array.from(form.querySelectorAll('input[name="duration[]"]')).map(i => i.value);
-            const descriptions = Array.from(form.querySelectorAll('textarea[name="description[]"]')).map(i => i.value);
-            
-            const experiences = [];
-            for (let i = 0; i < jobTitles.length; i++) {
-                if (jobTitles[i].trim() !== '') {
-                    experiences.push({
-                        job_title: jobTitles[i],
-                        company: companies[i],
-                        duration: durations[i],
-                        description: descriptions[i]
-                    });
-                }
-            }
-            
-            // Create a hidden field with JSON value
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'content';
-            hiddenInput.value = JSON.stringify(experiences);
-            form.appendChild(hiddenInput);
-            
-            form.submit();
-        }
-        </script>
 
         <!-- Deux colonnes pour Compétences et Loisirs (conditionnelles) -->
         {% if skills is defined or section2 is defined or projects is defined %}
@@ -739,108 +453,18 @@
             <!-- Section Compétences -->
             {% if skills is defined %}
             <div class="section">
-                <button class="edit-btn" onclick="toggleEdit('skills')">Modifier</button>
                 <h2 class="section-title">Compétences</h2>
                 <div class="skills-list" id="skills-content">
                     {{ skills|safe }}
                 </div>
-                <div class="edit-form" id="skills-form">
-                    <form action="./{{ name }}/update" method="post">
-                        <input type="hidden" name="section" value="skills">
-                        <textarea name="content">{{ skills }}</textarea>
-                        <div class="form-buttons">
-                            <button type="button" class="cancel-btn" onclick="toggleEdit('skills')">Annuler</button>
-                            <button type="submit" class="save-btn">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
-                <!-- Formulaire pour éditer les compétences -->
-                <div class="edit-form" id="skills-form">
-                    <form action="./{{ name }}/update-field" method="post" id="skills-editor-form">
-                        <input type="hidden" name="field" value="skills">
-                        
-                        <div id="skills-container">
-                            {% if cv.skills %}
-                                {% for skill in cv.skills %}
-                                <div class="skill-input-group">
-                                    <input type="text" name="skills[]" value="{{ skill }}" class="skill-input">
-                                    <button type="button" onclick="removeSkill(this)" class="remove-btn">×</button>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="skill-input-group">
-                                    <input type="text" name="skills[]" value="" class="skill-input">
-                                    <button type="button" onclick="removeSkill(this)" class="remove-btn">×</button>
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <button type="button" onclick="addSkill()" class="add-btn">Ajouter une compétence</button>
-                        
-                        <div class="form-buttons">
-                            <button type="button" class="cancel-btn" onclick="toggleEdit('skills')">Annuler</button>
-                            <button type="button" class="save-btn" onclick="submitSkills()">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
-                
-                <script>
-                function addSkill() {
-                    const container = document.getElementById('skills-container');
-                    const div = document.createElement('div');
-                    div.className = 'skill-input-group';
-                    div.innerHTML = `
-                        <input type="text" name="skills[]" value="" class="skill-input">
-                        <button type="button" onclick="removeSkill(this)" class="remove-btn">×</button>
-                    `;
-                    container.appendChild(div);
-                }
-                
-                function removeSkill(button) {
-                    const container = document.getElementById('skills-container');
-                    const group = button.parentElement;
-                    // Make sure we have at least one input field
-                    if (container.children.length > 1) {
-                        container.removeChild(group);
-                    } else {
-                        group.querySelector('input').value = '';
-                    }
-                }
-                
-                function submitSkills() {
-                    const form = document.getElementById('skills-editor-form');
-                    const inputs = form.querySelectorAll('input[name="skills[]"]');
-                    const skills = Array.from(inputs).map(input => input.value).filter(val => val.trim() !== '');
-                    
-                    // Create a hidden field with JSON value
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'content';
-                    hiddenInput.value = JSON.stringify(skills);
-                    form.appendChild(hiddenInput);
-                    
-                    form.submit();
-                }
-                </script>
             </div>
             {% endif %}
 
             <!-- Section Loisirs et autres informations -->
             {% if section2 is defined %}
             <div class="section">
-                <button class="edit-btn" onclick="toggleEdit('section2')">Modifier</button>
                 <h2 class="section-title">Langues et Centres d'intérêt</h2>
                 <div id="section2-content">{{ section2|safe }}</div>
-                <div class="edit-form" id="section2-form">
-                    <form action="./{{ name }}/update" method="post">
-                        <input type="hidden" name="section" value="section2">
-                        <textarea name="content">{{ section2 }}</textarea>
-                        <div class="form-buttons">
-                            <button type="button" class="cancel-btn" onclick="toggleEdit('section2')">Annuler</button>
-                            <button type="submit" class="save-btn">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
             </div>
             {% endif %}
         </div>
@@ -849,19 +473,8 @@
         <!-- Section Projets (conditionnelle) -->
         {% if projects is defined %}
         <div class="section">
-            <button class="edit-btn" onclick="toggleEdit('projects')">Modifier</button>
             <h2 class="section-title">Projets</h2>
             <div id="projects-content">{{ projects|safe }}</div>
-            <div class="edit-form" id="projects-form">
-                <form action="./{{ name }}/update" method="post">
-                    <input type="hidden" name="section" value="projects">
-                    <textarea name="content">{{ projects }}</textarea>
-                    <div class="form-buttons">
-                        <button type="button" class="cancel-btn" onclick="toggleEdit('projects')">Annuler</button>
-                        <button type="submit" class="save-btn">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
         </div>
         {% endif %}
 
@@ -882,7 +495,7 @@
         <!-- Pied de page -->
         <div class="footer">
             {% if is_owner %}
-            <p>Vous êtes connecté en tant que {{ name }}. Vous pouvez éditer ce CV.</p>
+            <p>Vous êtes connecté en tant que {{ name }}. Pour éditer ce CV, utilisez l'application.</p>
             {% else %}
             <p>Vous consultez le CV de {{ name }}. <a href="{{ CLIENT_URL }}">Connectez-vous</a> pour modifier votre propre CV.</p>
             {% endif %}
@@ -890,16 +503,6 @@
     </div>
 
     <script>
-        // Fonction pour basculer l'affichage des formulaires d'édition
-        function toggleEdit(sectionId) {
-            const form = document.getElementById(sectionId + '-form');
-            if (form.style.display === 'block') {
-                form.style.display = 'none';
-            } else {
-                form.style.display = 'block';
-            }
-        }
-        
         // Animation au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
             const sections = document.querySelectorAll('.section, .cv-header');
