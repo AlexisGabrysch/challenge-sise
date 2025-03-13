@@ -222,36 +222,96 @@ def delete_cv(username: str) -> tuple:
     except Exception as e:
         return False, f"Error deleting CV: {str(e)}"
 
+def render_auth_header(active: str):
+    """
+    Affiche un header similaire à la home page pour les pages d'authentification.
+    Le paramètre active doit être soit "login" soit "register".
+    """
+    header_html = f"""
+    <style>
+    .header {{
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       padding: 1rem 0;
+       margin-bottom: 2rem;
+    }}
+    .logo {{
+       font-size: 1.8rem;
+       font-weight: 700;
+       background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
+       -webkit-background-clip: text;
+       -webkit-text-fill-color: transparent;
+       letter-spacing: 0.02em;
+    }}
+    .nav-buttons {{
+       display: flex;
+       gap: 1rem;
+    }}
+    .nav-btn {{
+       padding: 0.5rem 1.5rem;
+       border-radius: 50px;
+       font-weight: 500;
+       font-size: 0.9rem;
+       cursor: pointer;
+       background-color: white;
+       border: 1px solid #CCDCEB;
+       color: #6a7b96;
+       transition: all 0.3s ease;
+       text-decoration: none;
+    }}
+    .nav-btn.active {{
+       background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
+       border: none;
+       color: #333;
+    }}
+    </style>
+    <div class="header">
+      <div class="logo">CVision</div>
+      <div class="nav-buttons">
+         <div class="nav-btn {'active' if active=='login' else ''}">Connexion</div>
+         <div class="nav-btn {'active' if active=='register' else ''}">S'inscrire</div>
+      </div>
+    </div>
+    """
+    st.components.v1.html(header_html, height=120)
+
+
 def show_login_page():
-    st.title("Login")
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    render_auth_header("login")
+    st.markdown("</div>", unsafe_allow_html=True)
     
+    st.title("Login")
     with st.form("login_form"):
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         submit = st.form_submit_button("Login")
-        
         if submit:
             if login(email, password):
                 st.session_state.page = PAGE_USER_PROFILE
                 st.rerun()
             else:
                 st.error("Invalid email or password")
-    
-    st.write("Don't have an account?")
-    if st.button("Register", key="register_btn_login"):
+    st.markdown("---")
+    st.info("Vous n'avez pas de compte ?")
+    if st.button("Register", key="go_to_register"):
         st.session_state.page = PAGE_REGISTER
         st.rerun()
 
+
 def show_register_page():
-    st.title("Register")
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    render_auth_header("register")
+    st.markdown("</div>", unsafe_allow_html=True)
     
+    st.title("Register")
     with st.form("register_form"):
         name = st.text_input("Username")
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         password_confirm = st.text_input("Confirm Password", type="password")
         submit = st.form_submit_button("Register")
-        
         if submit:
             if password != password_confirm:
                 st.error("Passwords do not match")
@@ -261,9 +321,9 @@ def show_register_page():
                 if register(name, email, password):
                     st.session_state.page = PAGE_USER_PROFILE
                     st.rerun()
-    
-    st.write("Already have an account?")
-    if st.button("Login", key="login_btn_register"):
+    st.markdown("---")
+    st.info("Vous avez déjà un compte ?")
+    if st.button("Login", key="go_to_login"):
         st.session_state.page = PAGE_LOGIN
         st.rerun()
 
@@ -287,7 +347,7 @@ def show_user_profile():
         padding: 20px;
         text-align: center;
         margin: 10px 0;
-        background-color: #f8f9fa;
+        background-color: white !important;
     }
     .uploadfile:hover {
         border-color: #4285F4;
@@ -1178,38 +1238,23 @@ def show_home_page():
     </html>
     """
     
-    msg = st.query_params.get("streamlit:componentOutput")
+    html(html_content, height=2500)
 
-    if msg:
-        if msg[0] == "login":
-            st.switch_page("login.py")  # Remplace par ta vraie page de login
-        elif msg[0] == "register":
-            st.switch_page("register.py")  # Page d'inscription
-    
-    # Intercepter la valeur du composant qui est définie par JavaScript
-    component_value = html(html_content, height=3000)
-    
-    if component_value == 'login':
-        st.session_state.page = PAGE_LOGIN
-        st.rerun()
-    elif component_value == 'register':
-        st.session_state.page = PAGE_REGISTER
-        st.rerun()
-    
+ 
 
 # Mise à jour de la fonction principale pour inclure la page d'accueil
 def main():
     # Essayer de définir un arrière-plan
     
     # Masquer les éléments Streamlit par défaut sur la page d'accueil
-    if st.session_state.page == PAGE_HOME:
-        st.markdown("""
-            <style>
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
-            </style>
-            """, unsafe_allow_html=True)
+    # if st.session_state.page == PAGE_HOME:
+    #     st.markdown("""
+    #         <style>
+    #         #MainMenu {visibility: hidden;}
+    #         header {visibility: hidden;}
+    #         footer {visibility: hidden;}
+    #         </style>
+    #         """, unsafe_allow_html=True)
     
     # Sidebar avec le nom de l'app (sauf sur la page d'accueil)
     if st.session_state.page != PAGE_HOME:
