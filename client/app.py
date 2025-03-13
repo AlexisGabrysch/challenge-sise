@@ -315,10 +315,6 @@ def show_user_profile():
     
     with st.expander("Delete My CV"):
         st.warning("Warning: This action cannot be undone. Your CV data will be permanently deleted.")
-        if st.button("Delete My CV", key="delete_cv_btn_profile"):
-            delete_confirmation = st.checkbox("I understand that this action is permanent", key="delete_confirmation")
-            if delete_confirmation:
-                if st.button("Confirm Deletion", key="confirm_delete_btn_profile"):
                     with st.spinner("Deleting your CV..."):
                         success, message = delete_cv(username)
                         if success:
