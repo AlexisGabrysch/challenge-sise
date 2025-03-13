@@ -7,22 +7,17 @@ from fastapi.security import HTTPBasic
 import uvicorn
 import os
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
-
+from pymongo import MongoClient
+from bson import ObjectId
+import bcrypt
+from datetime import datetime, timedelta
+import secrets
 import tempfile
-import os
-from fastapi import UploadFile, File
+
 from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
 from modules.llm_structuring import structure_cv_json
-
-
-from connection import connect_to_mysql, execute_query, close_connection
-from db_setup import setup_database
-from auth import (
-    authenticate_user, create_user, create_session, 
-    get_user_from_session, is_page_owner, get_current_user
-)
 
 # Configuration du logging
 logging.basicConfig(
@@ -52,98 +47,185 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 security = HTTPBasic()
 
-# MySQL connection configuration
-DB_CONFIG = {
-    'host': 'maglev.proxy.rlwy.net',
-    'user': 'root',
-    'password': 'EeXtIBwNKhAyySgijzeanMRgNAQifsmZ',
-    'database': 'railway',
-    'port': 40146
-}
+# MongoDB connection
+MONGO_URI = "mongodb+srv://cv_database:YnUNdP7NqfdkSRKy@challengesise.1aioj.mongodb.net/?retryWrites=true&w=majority&appName=challengeSISE"
+client = MongoClient(MONGO_URI)
+db = client["Challenge_SISE"]  # Base de données
+users_collection = db["users"]  # Collection des utilisateurs
+cvs_collection = db["cvs"]      # Collection des CV
+sessions_collection = db["sessions"]  # Nouvelle collection pour les sessions
 
 # URLs for redirects
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
-# Ajoutez cette ligne après la définition de SERVER_URL
 CLIENT_URL = os.getenv("CLIENT_URL", "https://beneficial-liberation-production.up.railway.app")
 logger.debug(f"CLIENT_URL: {CLIENT_URL}")
-
 logger.debug(f"SERVER_URL: {SERVER_URL}")
 
-# Helper to get or create user
-def get_or_create_user(name: str):
-    conn = connect_to_mysql(**DB_CONFIG)
-    if not conn:
-        logger.error("Failed to connect to database")
-        raise HTTPException(status_code=500, detail="Database connection error")
-    
-    try:
-        cursor = conn.cursor(dictionary=True)
-        
-        # Check if user exists in logging table first
-        cursor.execute("SELECT id FROM logging WHERE name = %s", (name,))
-        user = cursor.fetchone()
-        
-        if user:
-            logger.debug(f"Found existing user in logging with id: {user['id']}")
-            return user["id"]
-            
-        # If not found in logging, check the legacy users table if it exists
-        try:
-            cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
-            user = cursor.fetchone()
-            
-            if user:
-                logger.debug(f"Found existing user in users table with id: {user['id']}")
-                return user["id"]
-        except Exception as e:
-            # Table might not exist, ignore this error
-            logger.debug(f"Could not check users table: {e}")
-        
-        # Create new user in logging table
-        cursor.execute("INSERT INTO logging (name, email, password_hash, is_authenticated) VALUES (%s, %s, %s, FALSE)", 
-                      (name, f"{name}@example.com", "temporary"))
-        conn.commit()
-        user_id = cursor.lastrowid
-        logger.debug(f"Created new user with id: {user_id}")
-        return user_id
-    except Exception as e:
-        logger.error(f"Error in get_or_create_user: {e}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        cursor.close()
-        close_connection(conn)
+# Helper Functions
+def hash_password(password: str) -> str:
+    """Hash a password for storing"""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
-# Helper to get or create default content
-def get_or_create_content(user_id: int, section_name: str, default_content: str = ""):
-    conn = connect_to_mysql(**DB_CONFIG)
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection error")
-    
-    try:
-        cursor = conn.cursor(dictionary=True)
-        
-        # Check if content exists
-        cursor.execute(
-            "SELECT id, content FROM contents WHERE user_id = %s AND section_name = %s",
-            (user_id, section_name)
-        )
-        content = cursor.fetchone()
-        
-        if content:
-            return content["content"]
-        
-        # Create default content
-        cursor.execute(
-            "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-            (user_id, section_name, default_content)
-        )
-        conn.commit()
-        return default_content
-    finally:
-        cursor.close()
-        close_connection(conn)
+def verify_password(stored_password: str, provided_password: str) -> bool:
+    """Verify a stored password against one provided by user"""
+    return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password.encode('utf-8'))
 
-# Classe pour la validation des données d'entrée
+def create_user(name: str, email: str, password: str):
+    """Create a new user in MongoDB"""
+    # Check if user already exists
+    if users_collection.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if users_collection.find_one({"user_name": name}):
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Create user
+    user_data = {
+        "email": email,
+        "password_hash": hash_password(password),
+        "user_name": name,
+        "created_at": datetime.utcnow()
+    }
+    
+    result = users_collection.insert_one(user_data)
+    return result.inserted_id
+
+def authenticate_user(email: str, password: str):
+    """Authenticate a user"""
+    user = users_collection.find_one({"email": email})
+    
+    if not user or not verify_password(user["password_hash"], password):
+        return None
+    
+    return {
+        "id": str(user["_id"]),
+        "name": user["user_name"],
+        "email": user["email"]
+    }
+
+def create_session(user_id: str):
+    """Create a new session for a user"""
+    token = secrets.token_hex(32)
+    expires = datetime.utcnow() + timedelta(days=30)
+    
+    session = {
+        "user_id": user_id,
+        "token": token,
+        "created_at": datetime.utcnow(),
+        "expires_at": expires
+    }
+    
+    sessions_collection.insert_one(session)
+    return token
+
+def get_user_from_session(token: str):
+    """Get user from session token"""
+    session = sessions_collection.find_one({
+        "token": token,
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not session:
+        return None
+    
+    user = users_collection.find_one({"_id": ObjectId(session["user_id"])})
+    if not user:
+        return None
+    
+    return {
+        "id": str(user["_id"]),
+        "name": user["user_name"],
+        "email": user["email"]
+    }
+
+def is_page_owner(token: str, username: str):
+    """Check if the current session user is the owner of a page"""
+    user = get_user_from_session(token)
+    
+    if not user:
+        return False
+    
+    return user["name"] == username
+
+async def get_current_user(request: Request):
+    """Get current user from request cookies"""
+    token = request.cookies.get("session_token")
+    
+    if not token:
+        return None
+    
+    return get_user_from_session(token)
+
+def get_or_create_user_by_name(name: str):
+    """Get or create a user by name"""
+    user = users_collection.find_one({"user_name": name})
+    
+    if user:
+        return str(user["_id"])
+    
+    # Create new user
+    new_user = {
+        "user_name": name,
+        "email": f"{name}@example.com",
+        "password_hash": hash_password("temporary"),
+        "created_at": datetime.utcnow()
+    }
+    
+    result = users_collection.insert_one(new_user)
+    return str(result.inserted_id)
+
+def get_cv_content(user_id: str):
+    """Get CV content for a user"""
+    cv = cvs_collection.find_one({"user_id": user_id})
+    
+    if not cv:
+        # Create default CV
+        default_cv = {
+            "user_id": user_id,
+            "header": None,
+            "section1": None,
+            "section2": None,
+            "experience": None,
+            "education": None,
+            "skills": None,
+            "title": None,
+            "email": None,
+            "phone": None,
+            "location": None,
+            "last_updated": datetime.utcnow()
+        }
+        cvs_collection.insert_one(default_cv)
+        return default_cv
+    
+    return cv
+
+def update_cv_section(user_id: str, section: str, content: str):
+    """Update a section of a user's CV"""
+    # Check if CV exists
+    cv = cvs_collection.find_one({"user_id": user_id})
+    
+    if cv:
+        # Update existing CV
+        cvs_collection.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    section: content,
+                    "last_updated": datetime.utcnow()
+                }
+            }
+        )
+    else:
+        # Create new CV with this section
+        new_cv = {
+            "user_id": user_id,
+            section: content,
+            "last_updated": datetime.utcnow()
+        }
+        cvs_collection.insert_one(new_cv)
+
+# Pydantic Models
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -157,21 +239,20 @@ class CVUpdateRequest(BaseModel):
     section: str
     content: str
 
-# --------- API JSON Routes for Streamlit Client ---------
-
+# API Routes
 @app.post("/api/login")
 async def api_login(login_data: LoginRequest):
     """API endpoint pour la connexion"""
     logger.debug(f"API Login attempt: {login_data.email}")
     
     # Authenticate user
-    user = authenticate_user(DB_CONFIG, login_data.email, login_data.password)
+    user = authenticate_user(login_data.email, login_data.password)
     
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Create session
-    session_token = create_session(DB_CONFIG, user["id"])
+    session_token = create_session(user["id"])
     
     # Return user data and token
     return {
@@ -188,14 +269,14 @@ async def api_register(register_data: RegisterRequest):
     
     try:
         # Create user
-        user_id = create_user(DB_CONFIG, register_data.name, register_data.email, register_data.password)
+        user_id = create_user(register_data.name, register_data.email, register_data.password)
         
         # Create session
-        session_token = create_session(DB_CONFIG, user_id)
+        session_token = create_session(str(user_id))
         
         # Return user data and token
         return {
-            "id": user_id,
+            "id": str(user_id),
             "name": register_data.name,
             "email": register_data.email,
             "session_token": session_token
@@ -209,62 +290,42 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
     """API endpoint pour récupérer les données du CV"""
     logger.debug(f"API Get CV: {name}")
     
-    # Get or create user
-    user_id = get_or_create_user(name)
+    # Get user by username
+    user = users_collection.find_one({"user_name": name})
     
-    # Get CV content - basic info
-    header_content = get_or_create_content(user_id, "header", f"{name}")
-    section1_content = get_or_create_content(
-        user_id, 
-        "section1", 
-        "Développeur web passionné avec plus de 5 ans d'expérience dans la création d'applications web modernes et réactives."
-    )
-    section2_content = get_or_create_content(
-        user_id, 
-        "section2", 
-        "<div class=\"hobbies-list\">\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🏃</div>\n        <span>Course à pied</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">📚</div>\n        <span>Lecture</span>\n    </div>\n</div>"
-    )
+    if not user:
+        # Create user if not exists
+        user_id = get_or_create_user_by_name(name)
+    else:
+        user_id = str(user["_id"])
     
-    # Get additional CV sections
-    experience = get_or_create_content(
-        user_id, 
-        "experience", 
-        '<div class="timeline-item">\n    <div class="date">Jan 2023 - Présent</div>\n    <h3 class="timeline-title">Développeur Full Stack</h3>\n    <div class="organization">Tech Solutions Inc.</div>\n    <p class="description">Développement et maintenance d\'applications web utilisant React, Node.js et MongoDB. Collaboration avec une équipe de 5 développeurs.</p>\n</div>\n<div class="timeline-item">\n    <div class="date">Mar 2021 - Déc 2022</div>\n    <h3 class="timeline-title">Développeur Front-End</h3>\n    <div class="organization">Digital Agency</div>\n    <p class="description">Conception et développement d\'interfaces utilisateur réactives et accessibles. Utilisation de HTML5, CSS3 et JavaScript.</p>\n</div>'
-    )
+    # Get CV content
+    cv = get_cv_content(user_id)
     
-    education = get_or_create_content(
-        user_id, 
-        "education", 
-        '<div class="timeline-item">\n    <div class="date">2019 - 2022</div>\n    <h3 class="timeline-title">Master en Informatique</h3>\n    <div class="organization">Université de Paris</div>\n    <p class="description">Spécialisation en développement web et applications mobiles. Projet de fin d\'études sur l\'intelligence artificielle.</p>\n</div>\n<div class="timeline-item">\n    <div class="date">2016 - 2019</div>\n    <h3 class="timeline-title">Licence en Informatique</h3>\n    <div class="organization">Université de Lyon</div>\n    <p class="description">Formation aux fondamentaux de l\'informatique, algorithmique, bases de données et programmation.</p>\n</div>'
-    )
+    # Create response with available sections
+    response = {"name": name}
     
-    skills = get_or_create_content(
-        user_id, 
-        "skills", 
-        '<div class="skill-tag">JavaScript</div>\n<div class="skill-tag">React.js</div>\n<div class="skill-tag">Node.js</div>\n<div class="skill-tag">HTML5</div>\n<div class="skill-tag">CSS3</div>\n<div class="skill-tag">MongoDB</div>\n<div class="skill-tag">Git</div>\n<div class="skill-tag">Docker</div>\n<div class="skill-tag">AWS</div>'
-    )
+    # Get fields from MongoDB or set defaults for basic and required fields
+    response["header"] = cv.get("header") or name
+    response["section1"] = cv.get("section1") or "Développeur web passionné avec plus de 5 ans d'expérience."
+    response["section2"] = cv.get("section2") or '<div class="hobbies-list"><div class="hobby-item"><div class="hobby-icon">🏃</div><span>Course à pied</span></div><div class="hobby-item"><div class="hobby-icon">📚</div><span>Lecture</span></div></div>'
     
-    title = get_or_create_content(user_id, "title", "Développeur Full Stack")
-    email = get_or_create_content(user_id, "email", f"{name}@example.com")
-    phone = get_or_create_content(user_id, "phone", "06 12 34 56 78")
-    location = get_or_create_content(user_id, "location", "Paris, France")
- 
+    # Add optional fields only if they exist in the CV
+    for field in ["experience", "education", "skills", "title", "email", "phone", "location"]:
+        if cv.get(field):
+            response[field] = cv[field]
+        else:
+            # Add default values for certain fields
+            if field == "title":
+                response[field] = "Développeur Full Stack"
+            elif field == "email":
+                response[field] = f"{name}@example.com"
+            elif field == "phone":
+                response[field] = "06 12 34 56 78"
+            elif field == "location":
+                response[field] = "Paris, France"
     
-    # Return CV data with all sections
-    return {
-        "name": name,
-        "header": header_content,
-        "section1": section1_content,
-        "section2": section2_content,
-        "experience": experience,
-        "education": education,
-        "skills": skills,
-        "title": title,
-        "email": email,
-        "phone": phone,
-        "location": location,
-
-    }
+    return response
 
 @app.post("/api/cv/{name}/update")
 async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: str = Header(None)):
@@ -277,46 +338,21 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
         session_token = authorization[7:]  # Remove "Bearer " prefix
     
     # Check authorization - only page owner can update
-    if not session_token or not is_page_owner(DB_CONFIG, session_token, name):
+    if not session_token or not is_page_owner(session_token, name):
         raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
     
-    # Get user id
-    user_id = get_or_create_user(name)
+    # Get user by name
+    user = users_collection.find_one({"user_name": name})
     
-    # Update content
-    conn = connect_to_mysql(**DB_CONFIG)
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection error")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
-    try:
-        cursor = conn.cursor()
-        
-        # Try to update existing content
-        cursor.execute(
-            """
-            UPDATE contents 
-            SET content = %s, last_updated = CURRENT_TIMESTAMP 
-            WHERE user_id = %s AND section_name = %s
-            """,
-            (update_data.content, user_id, update_data.section)
-        )
-        
-        # Check if any rows were updated
-        if cursor.rowcount == 0:
-            # If no rows were updated, insert new content
-            cursor.execute(
-                "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                (user_id, update_data.section, update_data.content)
-            )
-        
-        conn.commit()
-        
-        return {"status": "success"}
-    finally:
-        conn.close()
+    # Update CV section
+    update_cv_section(str(user["_id"]), update_data.section, update_data.content)
+    
+    return {"status": "success"}
 
-# --------- Existing routes ---------
-
+# Web Routes
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     logger.debug("Root endpoint accessed")
@@ -328,7 +364,7 @@ async def login_page(request: Request, error: str = None):
     logger.debug("Login page accessed - redirecting to client app")
     
     # Check if user is already logged in
-    current_user = await get_current_user(request, DB_CONFIG)
+    current_user = await get_current_user(request)
     
     if current_user:
         # If already logged in, redirect to their page
@@ -346,14 +382,14 @@ async def login(
     logger.debug("Login attempt")
     
     # Authenticate user
-    user = authenticate_user(DB_CONFIG, email, password)
+    user = authenticate_user(email, password)
     
     if not user:
         logger.debug("Login failed")
         return RedirectResponse(url="/login?error=Invalid+email+or+password", status_code=303)
     
     # Create session
-    session_token = create_session(DB_CONFIG, user["id"])
+    session_token = create_session(user["id"])
     
     # Create response with redirect
     response = RedirectResponse(url=f"/user/{user['name']}", status_code=303)
@@ -374,7 +410,7 @@ async def register_page(request: Request, error: str = None):
     logger.debug("Register page accessed")
     
     # Check if user is already logged in
-    current_user = await get_current_user(request, DB_CONFIG)
+    current_user = await get_current_user(request)
     
     if current_user:
         # If already logged in, redirect to their page
@@ -404,10 +440,10 @@ async def register(
     
     try:
         # Create user
-        user_id = create_user(DB_CONFIG, name, email, password)
+        user_id = create_user(name, email, password)
         
         # Create session
-        session_token = create_session(DB_CONFIG, user_id)
+        session_token = create_session(str(user_id))
         
         # Create response with redirect
         response = RedirectResponse(url=f"/user/{name}", status_code=303)
@@ -439,44 +475,26 @@ async def logout():
     
     return response
 
-# Test endpoint
 @app.get("/test", response_class=HTMLResponse)
 async def test(request: Request):
     logger.debug("Test endpoint accessed")
     return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
 
-# Modifier cette fonction de routage pour supporter les thèmes
 @app.get("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str, theme: str = None):
     logger.debug(f"User page accessed for name: {name}, theme: {theme}")
     try:
-        # Get or create user
-        user_id = get_or_create_user(name)
+        # Get user by username
+        user = users_collection.find_one({"user_name": name})
         
-        # Get or create default content for sections
-        header_content = get_or_create_content(user_id, "header", f"{name}")
+        if not user:
+            user_id = get_or_create_user_by_name(name)
+        else:
+            user_id = str(user["_id"])
         
-        section1_content = get_or_create_content(
-            user_id, 
-            "section1", 
-            "Développeur web passionné avec plus de 5 ans d'expérience dans la création d'applications web modernes et réactives. Je suis spécialisé dans le développement full stack avec une expertise particulière en JavaScript et ses frameworks. J'aime résoudre des problèmes complexes et apprendre continuellement de nouvelles technologies."
-        )
-        
-        section2_content = get_or_create_content(
-            user_id, 
-            "section2", 
-            "<div class=\"hobbies-list\">\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🏃</div>\n        <span>Course à pied</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">📚</div>\n        <span>Lecture</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">✈️</div>\n        <span>Voyages</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🎮</div>\n        <span>Jeux vidéo</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🎸</div>\n        <span>Guitare</span>\n    </div>\n</div>"
-        )
-        
-        # Get additional CV sections
-        experience = get_or_create_content(user_id, "experience", None)
-        education = get_or_create_content(user_id, "education", None)
-        skills = get_or_create_content(user_id, "skills", None)
-        title = get_or_create_content(user_id, "title", "Développeur Full Stack")
-        email = get_or_create_content(user_id, "email", f"{name}@example.com")
-        phone = get_or_create_content(user_id, "phone", "06 12 34 56 78")
-        location = get_or_create_content(user_id, "location", "Paris, France")
+        # Get CV content
+        cv = get_cv_content(user_id)
         
         # Check if current user is the owner of the page
         session_token = request.cookies.get("session_token")
@@ -485,41 +503,51 @@ async def user_page(request: Request, name: str, theme: str = None):
         current_user_name = ""
         
         if session_token:
-            current_user = get_user_from_session(DB_CONFIG, session_token)
+            current_user = get_user_from_session(session_token)
             if current_user:
                 current_user_name = current_user["name"]
                 is_owner = current_user["name"] == name
         
-        # Sélectionner le template en fonction du paramètre de thème
+        # Prepare template data
+        template_data = {
+            "request": request,
+            "name": name,
+            "SERVER_URL": SERVER_URL,
+            "CLIENT_URL": CLIENT_URL,
+            "is_owner": is_owner,
+            "logged_in": current_user is not None,
+            "current_user_name": current_user_name
+        }
+        
+        # Add required fields with defaults if missing
+        template_data["header"] = cv.get("header") or name
+        template_data["section1"] = cv.get("section1") or "Développeur web passionné avec plus de 5 ans d'expérience."
+        template_data["section2"] = cv.get("section2") or '<div class="hobbies-list"><div class="hobby-item"><div class="hobby-icon">🏃</div><span>Course à pied</span></div><div class="hobby-item"><div class="hobby-icon">📚</div><span>Lecture</span></div></div>'
+        
+        # Add optional fields only if they exist
+        for field in ["experience", "education", "skills", "title", "email", "phone", "location"]:
+            if cv.get(field):
+                template_data[field] = cv[field]
+            else:
+                # Set some defaults for basic fields
+                if field == "title":
+                    template_data[field] = "Développeur Full Stack"
+                elif field == "email":
+                    template_data[field] = f"{name}@example.com"
+                elif field == "phone":
+                    template_data[field] = "06 12 34 56 78" 
+                elif field == "location":
+                    template_data[field] = "Paris, France"
+        
+        # Select template based on theme
         template_name = "user_template_ats.html" if theme == "ats" else "user_template.html"
         
-        return templates.TemplateResponse(
-            template_name, 
-            {
-                "request": request, 
-                "name": name, 
-                "header": header_content,
-                "title": title,
-                "email": email,
-                "phone": phone,
-                "location": location,
-                "section1": section1_content, 
-                "section2": section2_content,
-                "experience": experience,
-                "education": education,
-                "skills": skills,
-                "SERVER_URL": SERVER_URL,
-                "CLIENT_URL": CLIENT_URL,
-                "is_owner": is_owner,
-                "logged_in": session_token is not None,
-                "current_user_name": current_user_name
-            }
-        )
+        return templates.TemplateResponse(template_name, template_data)
+        
     except Exception as e:
         logger.error(f"Error serving user page: {e}")
         return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
-    
-# Support both paths for updates
+
 @app.post("/users/{name}/update", response_class=RedirectResponse)
 @app.post("/user/{name}/update", response_class=RedirectResponse)
 async def update_content(
@@ -533,74 +561,27 @@ async def update_content(
     # Check authorization - only page owner can update
     session_token = request.cookies.get("session_token")
     
-    if not session_token or not is_page_owner(DB_CONFIG, session_token, name):
+    if not session_token or not is_page_owner(session_token, name):
         raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
     
-    conn = connect_to_mysql(**DB_CONFIG)
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection error")
+    # Get user
+    user = users_collection.find_one({"user_name": name})
     
-    try:
-        cursor = conn.cursor(dictionary=True)
-        
-        # Get user id from logging
-        cursor.execute("SELECT id FROM logging WHERE name = %s", (name,))
-        user = cursor.fetchone()
-        
-        if not user:
-            # Try legacy users table as fallback
-            try:
-                cursor.execute("SELECT id FROM users WHERE name = %s", (name,))
-                user = cursor.fetchone()
-            except Exception:
-                pass
-                
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        user_id = user["id"]
-        
-        # Try to update existing content
-        cursor.execute(
-            """
-            UPDATE contents 
-            SET content = %s, last_updated = CURRENT_TIMESTAMP 
-            WHERE user_id = %s AND section_name = %s
-            """,
-            (content, user_id, section)
-        )
-        
-        # Check if any rows were updated
-        if cursor.rowcount == 0:
-            # If no rows were updated, insert new content
-            cursor.execute(
-                "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                (user_id, section, content)
-            )
-        
-        conn.commit()
-        
-        # Use the same path format as the request
-        if request.url.path.startswith("/user/"):
-            redirect_path = f"/user/{name}"
-        else:
-            redirect_path = f"/users/{name}"
-        
-        logger.debug(f"Redirecting to: {redirect_path}")
-        return RedirectResponse(url=redirect_path, status_code=303)
-    finally:
-        cursor.close()
-        close_connection(conn)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update CV section
+    update_cv_section(str(user["_id"]), section, content)
+    
+    # Use the same path format as the request
+    if request.url.path.startswith("/user/"):
+        redirect_path = f"/user/{name}"
+    else:
+        redirect_path = f"/users/{name}"
+    
+    logger.debug(f"Redirecting to: {redirect_path}")
+    return RedirectResponse(url=redirect_path, status_code=303)
 
-
-# Add these imports at the top of the file
-import tempfile
-import os
-from fastapi import UploadFile, File
-from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
-from modules.llm_structuring import structure_cv_json
-
-# Add this new endpoint to your FastAPI application
 @app.post("/api/cv/{name}/upload")
 async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
     """API endpoint for uploading and processing a CV file"""
@@ -612,11 +593,16 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
         session_token = authorization[7:]  # Remove "Bearer " prefix
     
     # Check authorization - only page owner can update
-    if not session_token or not is_page_owner(DB_CONFIG, session_token, name):
+    if not session_token or not is_page_owner(session_token, name):
         raise HTTPException(status_code=403, detail="You don't have permission to upload for this user")
     
-    # Get user id
-    user_id = get_or_create_user(name)
+    # Get user
+    user = users_collection.find_one({"user_name": name})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_id = str(user["_id"])
     
     # Check file type
     file_extension = file.filename.split('.')[-1].lower()
@@ -645,320 +631,145 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
         # Clean up the temporary file
         os.unlink(temp_file_path)
         
-        # Update CV sections in the database
-        conn = connect_to_mysql(**DB_CONFIG)
-        if not conn:
-            raise HTTPException(status_code=500, detail="Database connection error")
+        # Create CV document
+        cv_data = {
+            "user_id": user_id,
+            "last_updated": datetime.utcnow()
+        }
+        
+        # Extract name for header
+        if structured_cv.get("first_name") and structured_cv.get("last_name"):
+            cv_data["header"] = f"{structured_cv['first_name']} {structured_cv['last_name']}"
+        else:
+            cv_data["header"] = name.capitalize()
+        
+        # Create About section (section1) from structured data
+        about_section = ""
+        
+        # Add introduction if we have educational background
+        if structured_cv.get("education"):
+            highest_edu = structured_cv["education"][0]  # Assuming education is sorted with most recent first
+            about_section += f"Professional with education in {highest_edu.get('degree', 'higher education')} "
+            about_section += f"from {highest_edu.get('school', 'a recognized institution')}. "
             
-        try:
-            cursor = conn.cursor()
+        # Add work experience summary
+        if structured_cv.get("work_experience"):
+            latest_job = structured_cv["work_experience"][0]  # Assuming work experience is sorted
+            about_section += f"Experienced {latest_job.get('job_title', 'professional')} "
+            about_section += f"with background at {latest_job.get('company', 'reputable organizations')}. "
             
-            # Map the structured CV data to our sections
-            # We'll set basic fields like header, section1, etc. based on the structured data
+        # Add skills summary
+        if structured_cv.get("skills") and len(structured_cv["skills"]) > 0:
+            about_section += f"Skilled in {', '.join(structured_cv['skills'][:5])}."
             
-            # Extract name for header
-            if structured_cv.get("first_name") and structured_cv.get("last_name"):
-                header = f"{structured_cv['first_name']} {structured_cv['last_name']}"
-            else:
-                header = name.capitalize()  # Default to the username if no name found
+        cv_data["section1"] = about_section
             
-            # Update header
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (header, user_id, "header")
-            )
+        # Create hobbies/interests section (section2)
+        hobbies_html = "<div class=\"hobbies-list\">\n"
+        
+        # Add hobbies with emojis
+        hobby_emojis = {"sports": "🏃", "reading": "📚", "travel": "✈️", 
+                       "music": "🎵", "cooking": "🍳", "photography": "📷",
+                       "art": "🎨", "gaming": "🎮", "languages": "🗣️"}
+                       
+        if structured_cv.get("hobbies"):
+            for hobby in structured_cv["hobbies"]:
+                emoji = "🔍"  # Default emoji
+                for keyword, emoji_char in hobby_emojis.items():
+                    if keyword.lower() in hobby.lower():
+                        emoji = emoji_char
+                        break
+                        
+                hobbies_html += f"""    <div class="hobby-item">
+    <div class="hobby-icon">{emoji}</div>
+    <span>{hobby}</span>
+</div>\n"""
+        
+        # If no hobbies found, add languages as additional info
+        elif structured_cv.get("languages"):
+            for lang, level in structured_cv["languages"].items():
+                hobbies_html += f"""    <div class="hobby-item">
+    <div class="hobby-icon">🗣️</div>
+    <span>{lang} ({level})</span>
+</div>\n"""
+        
+        hobbies_html += "</div>"
+        
+        cv_data["section2"] = hobbies_html
             
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "header", header)
-                )
-            
-            # Create About section (section1) from structured data
-            about_section = ""
-            
-            # Add introduction if we have educational background
-            if structured_cv.get("education"):
-                highest_edu = structured_cv["education"][0]  # Assuming education is sorted with most recent first
-                about_section += f"Professional with education in {highest_edu.get('degree', 'higher education')} "
-                about_section += f"from {highest_edu.get('school', 'a recognized institution')}. "
-                
-            # Add work experience summary
-            if structured_cv.get("work_experience"):
-                latest_job = structured_cv["work_experience"][0]  # Assuming work experience is sorted
-                about_section += f"Experienced {latest_job.get('job_title', 'professional')} "
-                about_section += f"with background at {latest_job.get('company', 'reputable organizations')}. "
-                
-            # Add skills summary
-            if structured_cv.get("skills") and len(structured_cv["skills"]) > 0:
-                about_section += f"Skilled in {', '.join(structured_cv['skills'][:5])}."
-                
-            # Update section1
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (about_section, user_id, "section1")
-            )
-            
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "section1", about_section)
-                )
-                
-            # Create hobbies/interests section (section2)
-            hobbies_html = "<div class=\"hobbies-list\">\n"
-            
-            # Add hobbies with emojis
-            hobby_emojis = {"sports": "🏃", "reading": "📚", "travel": "✈️", 
-                           "music": "🎵", "cooking": "🍳", "photography": "📷",
-                           "art": "🎨", "gaming": "🎮", "languages": "🗣️"}
-                           
-            if structured_cv.get("hobbies"):
-                for hobby in structured_cv["hobbies"]:
-                    emoji = "🔍"  # Default emoji
-                    for keyword, emoji_char in hobby_emojis.items():
-                        if keyword.lower() in hobby.lower():
-                            emoji = emoji_char
-                            break
-                            
-                    hobbies_html += f"""    <div class="hobby-item">
-        <div class="hobby-icon">{emoji}</div>
-        <span>{hobby}</span>
-    </div>\n"""
-            
-            # If no hobbies found, add languages as additional info
-            elif structured_cv.get("languages"):
-                for lang, level in structured_cv["languages"].items():
-                    hobbies_html += f"""    <div class="hobby-item">
-        <div class="hobby-icon">🗣️</div>
-        <span>{lang} ({level})</span>
-    </div>\n"""
-            
-            hobbies_html += "</div>"
-            
-            # Update section2
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (hobbies_html, user_id, "section2")
-            )
-            
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "section2", hobbies_html)
-                )
-                
-            # Create experience timeline HTML
-            experience_html = ""
-            if structured_cv.get("work_experience"):
-                for job in structured_cv["work_experience"]:
-                    experience_html += f"""<div class="timeline-item">
-    <div class="date">{job.get('duration', 'N/A')}</div>
-    <h3 class="timeline-title">{job.get('job_title', 'Role')}</h3>
-    <div class="organization">{job.get('company', 'Company')}</div>
-    <p class="description">{job.get('description', '')}</p>
+        # Create experience timeline HTML
+        experience_html = ""
+        if structured_cv.get("work_experience"):
+            for job in structured_cv["work_experience"]:
+                experience_html += f"""<div class="timeline-item">
+<div class="date">{job.get('duration', 'N/A')}</div>
+<h3 class="timeline-title">{job.get('job_title', 'Role')}</h3>
+<div class="organization">{job.get('company', 'Company')}</div>
+<p class="description">{job.get('description', '')}</p>
 </div>\n"""
             
-            # Update experience
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (experience_html, user_id, "experience")
-            )
+        if experience_html:
+            cv_data["experience"] = experience_html
             
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "experience", experience_html)
-                )
-                
-            # Create education timeline HTML
-            education_html = ""
-            if structured_cv.get("education"):
-                for edu in structured_cv["education"]:
-                    education_html += f"""<div class="timeline-item">
-    <div class="date">{edu.get('year', 'N/A')}</div>
-    <h3 class="timeline-title">{edu.get('degree', 'Degree')}</h3>
-    <div class="organization">{edu.get('school', 'Institution')}</div>
-    <p class="description">{edu.get('details', '')}</p>
+        # Create education timeline HTML
+        education_html = ""
+        if structured_cv.get("education"):
+            for edu in structured_cv["education"]:
+                education_html += f"""<div class="timeline-item">
+<div class="date">{edu.get('year', 'N/A')}</div>
+<h3 class="timeline-title">{edu.get('degree', 'Degree')}</div>
+<div class="organization">{edu.get('school', 'Institution')}</div>
+<p class="description">{edu.get('details', '')}</p>
 </div>\n"""
                 
-            # Update education
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (education_html, user_id, "education")
-            )
+        if education_html:
+            cv_data["education"] = education_html
             
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "education", education_html)
-                )
+        # Create skills HTML
+        skills_html = ""
+        if structured_cv.get("skills"):
+            for skill in structured_cv["skills"]:
+                skills_html += f'<div class="skill-tag">{skill}</div>\n'
                 
-            # Create skills HTML
-            skills_html = ""
-            if structured_cv.get("skills"):
-                for skill in structured_cv["skills"]:
-                    skills_html += f'<div class="skill-tag">{skill}</div>\n'
-                    
-            # Update skills
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (skills_html, user_id, "skills")
-            )
-            
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "skills", skills_html)
-                )
+        if skills_html:
+            cv_data["skills"] = skills_html
                 
-            # Update additional fields
-            # Title
-            job_title = "Professional"
-            if structured_cv.get("work_experience") and structured_cv["work_experience"]:
-                job_title = structured_cv["work_experience"][0].get("job_title", "Professional")
-                
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (job_title, user_id, "title")
-            )
+        # Additional fields
+        if structured_cv.get("work_experience") and structured_cv["work_experience"]:
+            job_title = structured_cv["work_experience"][0].get("job_title", "Professional")
+            cv_data["title"] = job_title
             
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "title", job_title)
-                )
-                
-            # Email
-            email_value = structured_cv.get("email", f"{name}@example.com")
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (email_value, user_id, "email")
-            )
+        if structured_cv.get("email"):
+            cv_data["email"] = structured_cv["email"]
             
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "email", email_value)
-                )
-                
-            # Phone
-            phone_value = structured_cv.get("phone", "")
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (phone_value, user_id, "phone")
-            )
+        if structured_cv.get("phone"):
+            cv_data["phone"] = structured_cv["phone"]
             
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "phone", phone_value)
-                )
-                
-            # Location
-            location_value = structured_cv.get("address", "")
-            cursor.execute(
-                """
-                UPDATE contents 
-                SET content = %s, last_updated = CURRENT_TIMESTAMP 
-                WHERE user_id = %s AND section_name = %s
-                """,
-                (location_value, user_id, "location")
-            )
-            
-            if cursor.rowcount == 0:
-                cursor.execute(
-                    "INSERT INTO contents (user_id, section_name, content) VALUES (%s, %s, %s)",
-                    (user_id, "location", location_value)
-                )
-            
-            conn.commit()
-            
-            return {
-                "status": "success", 
-                "message": f"CV processed successfully for {name}",
-                "sections_updated": ["header", "section1", "section2", "experience", "education", "skills", 
-                                   "title", "email", "phone", "location"]
-            }
-            
-        finally:
-            cursor.close()
-            close_connection(conn)
+        if structured_cv.get("address"):
+            cv_data["location"] = structured_cv["address"]
+        
+        # Update or insert the CV data
+        cvs_collection.update_one(
+            {"user_id": user_id},
+            {"$set": cv_data},
+            upsert=True
+        )
+        
+        sections_updated = list(cv_data.keys())
+        sections_updated.remove("user_id")
+        sections_updated.remove("last_updated")
+        
+        return {
+            "status": "success", 
+            "message": f"CV processed successfully for {name}",
+            "sections_updated": sections_updated
+        }
             
     except Exception as e:
         logger.error(f"Error processing CV file: {str(e)}")
         if os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
         raise HTTPException(status_code=500, detail=f"Error processing CV: {str(e)}")
-
-
-
-
-
-
-
-
-# Setup database tables when the application starts
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Starting application, setting up database...")
-    try:
-        setup_database()
-        logger.info("Database setup complete")
-    except Exception as e:
-        logger.error(f"Error setting up database: {e}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
