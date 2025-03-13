@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import secrets
 import tempfile
 import json
-
+import asyncio
 from modules.pdf_preprocessing import remove_background_from_pdf
 from modules.ocr_extraction import extract_text_and_first_image_from_pdf, extract_text_from_pdf, extract_text_from_image
 from modules.llm_structuring import structure_cv_json
@@ -418,7 +418,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             # Extract text from original PDF
             ocr_result_original = extract_text_and_first_image_from_pdf(temp_path, user["email"])
             ocr_text_original = ocr_result_original["markdown"]
-            
+            first_image = ocr_result_original["image"]
             # Extract text from cleaned B&W PDF
             ocr_text_clean = extract_text_from_pdf(cleaned_pdf_path)
 
@@ -448,6 +448,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             try:
                 logger.debug(f"Attempt {attempt+1}/{max_retries} to process CV with LLM")
                 cv_data = structure_cv_json(text_total)
+                cv_data["image"] = first_image  # Store the first image found
                 break  # Success, exit retry loop
             except Exception as e:
                 if "429" in str(e) and attempt < max_retries - 1:
@@ -466,6 +467,7 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             cv_data = {
                 "user_id": ObjectId(user_id),
                 "sections": cv_data,
+
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
