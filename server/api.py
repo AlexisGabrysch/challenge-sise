@@ -323,24 +323,19 @@ async def root(request: Request):
     # Redirecting to login page
     return RedirectResponse(url="/login", status_code=303)
 
-@app.get("/login", response_class=HTMLResponse)
+@app.get("/login", response_class=RedirectResponse)
 async def login_page(request: Request, error: str = None):
-    logger.debug("Login page accessed")
+    logger.debug("Login page accessed - redirecting to client app")
     
     # Check if user is already logged in
     current_user = await get_current_user(request, DB_CONFIG)
     
-    if (current_user):
+    if current_user:
         # If already logged in, redirect to their page
         return RedirectResponse(url=f"/user/{current_user['name']}", status_code=303)
     
-    return templates.TemplateResponse(
-        "login.html", 
-        {
-            "request": request,
-            "error": error
-        }
-    )
+    # Redirect to the Streamlit client login page instead of showing an HTML template
+    return RedirectResponse(url=f"{CLIENT_URL}", status_code=303)
 
 @app.post("/login", response_class=RedirectResponse)
 async def login(
