@@ -409,44 +409,172 @@ def show_edit_cv():
             st.rerun()
         return
     
-    with st.form("edit_header_form"):
-        st.subheader("Header")
-        header = st.text_input("Header", value=cv_data.get("header", f"Welcome to {username}'s CV"))
-        submit_header = st.form_submit_button("Update Header")
-        
-        if submit_header:
-            if update_cv_section(username, "header", header):
-                st.success("Header updated successfully")
-            else:
-                st.error("Failed to update header")
+    # Personal information section
+    st.header("Personal Information")
     
-    with st.form("edit_section1_form"):
-        st.subheader("About")
-        section1 = st.text_area("About", value=cv_data.get("section1", ""))
-        submit_section1 = st.form_submit_button("Update About Section")
-        
-        if submit_section1:
-            if update_cv_section(username, "section1", section1):
-                st.success("About section updated successfully")
+    # Name fields
+    col1, col2 = st.columns(2)
+    with col1:
+        first_name = st.text_input("First Name", value=cv_data.get("first_name", ""))
+        if st.button("Update First Name"):
+            if update_cv_section(username, "first_name", first_name):
+                st.success("First name updated successfully")
             else:
-                st.error("Failed to update About section")
+                st.error("Failed to update first name")
     
-    with st.form("edit_section2_form"):
-        st.subheader("Additional Information")
-        section2 = st.text_area("Additional Information", value=cv_data.get("section2", ""))
-        submit_section2 = st.form_submit_button("Update Additional Information Section")
-        
-        if submit_section2:
-            if update_cv_section(username, "section2", section2):
-                st.success("Additional information updated successfully")
+    with col2:
+        last_name = st.text_input("Last Name", value=cv_data.get("last_name", ""))
+        if st.button("Update Last Name"):
+            if update_cv_section(username, "last_name", last_name):
+                st.success("Last name updated successfully")
             else:
-                st.error("Failed to update Additional information")
+                st.error("Failed to update last name")
     
-    # Ajouter le lien vers le CV public
+    # Contact information
+    st.subheader("Contact Information")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        email = st.text_input("Email", value=cv_data.get("email", ""))
+        if st.button("Update Email"):
+            if update_cv_section(username, "email", email):
+                st.success("Email updated successfully")
+            else:
+                st.error("Failed to update email")
+    
+    with col2:
+        phone = st.text_input("Phone", value=cv_data.get("phone", ""))
+        if st.button("Update Phone"):
+            if update_cv_section(username, "phone", phone):
+                st.success("Phone updated successfully")
+            else:
+                st.error("Failed to update phone")
+    
+    with col3:
+        address = st.text_input("Address", value=cv_data.get("address", "") or cv_data.get("location", ""))
+        if st.button("Update Address"):
+            if update_cv_section(username, "address", address):
+                st.success("Address updated successfully")
+            else:
+                st.error("Failed to update address")
+    
+    # Professional information
+    st.header("Professional Information")
+    
+    # Job title
+    job_title = st.text_input("Job Title", value=cv_data.get("job_title", "") or cv_data.get("title", ""))
+    if st.button("Update Job Title"):
+        if update_cv_section(username, "job_title", job_title):
+            st.success("Job title updated successfully")
+        else:
+            st.error("Failed to update job title")
+    
+    # Driving license
+    driving_license = st.text_input("Driving License", value=cv_data.get("driving_license", ""))
+    if st.button("Update Driving License"):
+        if update_cv_section(username, "driving_license", driving_license):
+            st.success("Driving license updated successfully")
+        else:
+            st.error("Failed to update driving license")
+    
+    # About/Summary
+    st.header("About Me")
+    summary = st.text_area("Professional Summary", value=cv_data.get("summary", "") or cv_data.get("section1", ""))
+    if st.button("Update Summary"):
+        if update_cv_section(username, "summary", summary):
+            st.success("Summary updated successfully")
+        else:
+            st.error("Failed to update summary")
+    
+    # Skills
+    st.header("Skills")
+    
+    # Get existing skills or empty list
+    existing_skills = cv_data.get("skills", [])
+    if isinstance(existing_skills, str):
+        try:
+            # Try to parse if it's a JSON string
+            existing_skills = json.loads(existing_skills)
+        except:
+            existing_skills = []
+    
+    skills_text = st.text_area("Skills (one per line)", value="\n".join(existing_skills))
+    if st.button("Update Skills"):
+        skills_list = [skill.strip() for skill in skills_text.split("\n") if skill.strip()]
+        if update_cv_section(username, "skills", skills_list):
+            st.success("Skills updated successfully")
+        else:
+            st.error("Failed to update skills")
+    
+    # Languages
+    st.header("Languages")
+    
+    # Get existing languages or empty dict
+    existing_languages = cv_data.get("languages", {})
+    if isinstance(existing_languages, str):
+        try:
+            existing_languages = json.loads(existing_languages)
+        except:
+            existing_languages = {}
+    
+    languages_text = st.text_area("Languages (format: Language: Level)", 
+                               value="\n".join([f"{lang}: {level}" for lang, level in existing_languages.items()]))
+    
+    if st.button("Update Languages"):
+        languages_dict = {}
+        for line in languages_text.split("\n"):
+            if ":" in line:
+                lang, level = line.split(":", 1)
+                languages_dict[lang.strip()] = level.strip()
+        
+        if update_cv_section(username, "languages", languages_dict):
+            st.success("Languages updated successfully")
+        else:
+            st.error("Failed to update languages")
+    
+    # Hobbies
+    st.header("Hobbies")
+    
+    # Get existing hobbies or empty list
+    existing_hobbies = cv_data.get("hobbies", [])
+    if isinstance(existing_hobbies, str):
+        try:
+            existing_hobbies = json.loads(existing_hobbies)
+        except:
+            existing_hobbies = []
+    
+    hobbies_text = st.text_area("Hobbies (one per line)", value="\n".join(existing_hobbies))
+    if st.button("Update Hobbies"):
+        hobbies_list = [hobby.strip() for hobby in hobbies_text.split("\n") if hobby.strip()]
+        if update_cv_section(username, "hobbies", hobbies_list):
+            st.success("Hobbies updated successfully")
+        else:
+            st.error("Failed to update hobbies")
+    
+    # Certifications
+    st.header("Certifications")
+    
+    # Get existing certifications or empty list
+    existing_certifications = cv_data.get("certifications", [])
+    if isinstance(existing_certifications, str):
+        try:
+            existing_certifications = json.loads(existing_certifications)
+        except:
+            existing_certifications = []
+    
+    certifications_text = st.text_area("Certifications (one per line)", value="\n".join(existing_certifications))
+    if st.button("Update Certifications"):
+        certifications_list = [cert.strip() for cert in certifications_text.split("\n") if cert.strip()]
+        if update_cv_section(username, "certifications", certifications_list):
+            st.success("Certifications updated successfully")
+        else:
+            st.error("Failed to update certifications")
+    
+    # Link to public CV
     show_public_cv_link(username)
     
+    # Navigation buttons
     col1, col2 = st.columns(2)
-    
     with col1:
         if st.button("Back to Profile", key="back_to_profile_btn_edit"):
             st.session_state.page = PAGE_USER_PROFILE

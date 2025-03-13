@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import secrets
 import tempfile
 import json
-from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image, extract_text_and_first_image_from_pdf
+from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image , extract_text_and_first_image_from_pdf
 from modules.llm_structuring import structure_cv_json
 from modules.pdf_preprocessing import remove_background_from_pdf
 
@@ -255,20 +255,6 @@ def update_cv_section(user_id: str, section: str, content: str):
         }
         cvs_collection.insert_one(new_cv)
 
-# Pydantic Models
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-class RegisterRequest(BaseModel):
-    name: str
-    email: str
-    password: str
-
-class CVUpdateRequest(BaseModel):
-    section: str
-    content: str
-
 @app.post("/api/register")
 async def api_register(register_request: RegisterRequest):
     """API endpoint pour l'enregistrement"""
@@ -427,12 +413,12 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             remove_background_from_pdf(temp_path, cleaned_pdf_path)
             
             # Extract text from the cleaned PDF
-            text_noir_blanc = extract_text_and_first_image_from_pdf(cleaned_pdf_path)
+            text_noir_blanc = extract_text_from_pdf(cleaned_pdf_path)
             
             # Clean up the cleaned PDF file
             os.unlink(cleaned_pdf_path)
         elif file_extension in ['jpg', 'jpeg', 'png']:
-            text_original = extract_text_and_first_image_from_pdf(temp_path)
+            text_original = extract_text_from_image(temp_path)
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format")
         
