@@ -596,7 +596,7 @@ async def user_page(request: Request, name: str, theme: str = None):
             
             # Map MongoDB document structure to template fields
             
-            # Header (full name)
+       # Header (full name)
             if "first_name" in cv and "last_name" in cv:
                 template_data["header"] = f"{cv['first_name']} {cv['last_name']}"
             elif "first_name" in cv:
@@ -605,7 +605,12 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["header"] = cv['last_name']
             else:
                 template_data["header"] = name
-                
+            
+            # Pass image data to template if it exists
+            if "image_base64" in cv:
+                template_data["cv"]["image_base64"] = cv["image"]["image_base64"]
+
+
             # Section 1 (About)
             if "summary" in cv:
                 template_data["section1"] = cv["summary"]

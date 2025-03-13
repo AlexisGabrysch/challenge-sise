@@ -447,7 +447,7 @@
         <button style="padding: 8px 15px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=ats'">Thème ATS</button>
     </div>
     <div class="container">
-        <!-- En-tête du CV avec nom et titre -->
+                <!-- Modification du header du CV pour inclure l'image si disponible -->
         <div class="cv-header" id="header-section">
             <button class="edit-btn {% if is_owner %}owner{% endif %}" onclick="toggleEdit('header')">Modifier</button>
             <div class="profile-info">
@@ -478,6 +478,11 @@
                     {% endif %}
                 </div>
             </div>
+            {% if cv.image_base64 %}
+            <div class="profile-image-container">
+                <img src="data:image/jpeg;base64,{{ cv.image_base64 }}" alt="Photo de profil" class="profile-image">
+            </div>
+            {% endif %}
             <div class="edit-form" id="header-form">
                 <form action="./{{ name }}/update" method="post">
                     <input type="hidden" name="section" value="header">
