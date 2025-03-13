@@ -605,15 +605,23 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["header"] = cv['last_name']
             else:
                 template_data["header"] = name
-            
-            # Pass image data to template if it exists
+
             if "image" in cv:
-                img  = cv["image"]
-                if img and "image_base64" in img:
+                img = cv["image"]
+                if img and isinstance(img, dict) and "image_base64" in img:
                     template_data["cv"]["image_base64"] = img["image_base64"]
+                elif img and isinstance(img, str):
+                    # Si l'image est déjà une chaîne base64
+                    template_data["cv"]["image_base64"] = img
                 else:
+                    # S'assurer que template_data["cv"] existe
+                    if "cv" not in template_data:
+                        template_data["cv"] = {}
                     template_data["cv"]["image_base64"] = None
-                    
+            elif "image_base64" in cv:  # Vérifier aussi directement pour image_base64
+                template_data["cv"] = template_data.get("cv", {})
+                template_data["cv"]["image_base64"] = cv["image_base64"]
+
                 
 
 
