@@ -4,21 +4,11 @@ import os
 import requests
 import json
 from typing import Optional, Dict, Any
-import base64
-from datetime import datetime
-import time
-# Configuration pour la largeur complète
-st.set_page_config(
-    page_title="CV Manager",
-    page_icon="📄",
-    layout="wide",  # Utilise toute la largeur disponible
-    initial_sidebar_state="auto"
-)
+
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
 
 # Définir les pages de l'application
-PAGE_HOME = "home"  # Nouvelle page d'accueil
 PAGE_LOGIN = "login"
 PAGE_REGISTER = "register"
 PAGE_USER_PROFILE = "profile"
@@ -27,45 +17,13 @@ PAGE_VIEW_CV = "view_cv"
 
 # Initialiser l'état de session
 if "page" not in st.session_state:
-    st.session_state.page = PAGE_HOME  # Changer la page par défaut à HOME
+    st.session_state.page = PAGE_LOGIN
 
 if "user" not in st.session_state:
     st.session_state.user = None
 
 if "session_token" not in st.session_state:
     st.session_state.session_token = None
-
-# Fonction pour charger une image locale et la convertir en base64
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
-# Fonction pour définir un arrière-plan personnalisé
-def set_background(png_file):
-    try:
-        bin_str = get_base64_of_bin_file(png_file)
-        page_bg_img = '''
-        <style>
-        .stApp {
-            background-image: url("data:image/png;base64,%s");
-            background-size: cover;
-        }
-        </style>
-        ''' % bin_str
-        st.markdown(page_bg_img, unsafe_allow_html=True)
-    except:
-        # Si l'image n'est pas disponible, utiliser une couleur de fond dégradée
-        st.markdown(
-            """
-            <style>
-            .stApp {
-                background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
 
 def set_page(page: str):
     """Change la page actuelle"""
@@ -88,11 +46,7 @@ def login(email: str, password: str) -> bool:
                 "email": data["email"]
             }
             st.session_state.session_token = data["session_token"]
-            # Ajouter cette ligne pour rediriger vers le CV après login
-            st.markdown(f"""
-            <meta http-equiv="refresh" content="1; url={SERVER_URL}/user/{data['name']}">
-            <p>Login successful! Redirecting to your CV...</p>
-            """, unsafe_allow_html=True)
+        
             return True
         return False
     except Exception as e:
@@ -222,96 +176,36 @@ def delete_cv(username: str) -> tuple:
     except Exception as e:
         return False, f"Error deleting CV: {str(e)}"
 
-def render_auth_header(active: str):
-    """
-    Affiche un header similaire à la home page pour les pages d'authentification.
-    Le paramètre active doit être soit "login" soit "register".
-    """
-    header_html = f"""
-    <style>
-    .header {{
-       display: flex;
-       justify-content: space-between;
-       align-items: center;
-       padding: 1rem 0;
-       margin-bottom: 2rem;
-    }}
-    .logo {{
-       font-size: 1.8rem;
-       font-weight: 700;
-       background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
-       -webkit-background-clip: text;
-       -webkit-text-fill-color: transparent;
-       letter-spacing: 0.02em;
-    }}
-    .nav-buttons {{
-       display: flex;
-       gap: 1rem;
-    }}
-    .nav-btn {{
-       padding: 0.5rem 1.5rem;
-       border-radius: 50px;
-       font-weight: 500;
-       font-size: 0.9rem;
-       cursor: pointer;
-       background-color: white;
-       border: 1px solid #CCDCEB;
-       color: #6a7b96;
-       transition: all 0.3s ease;
-       text-decoration: none;
-    }}
-    .nav-btn.active {{
-       background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
-       border: none;
-       color: #333;
-    }}
-    </style>
-    <div class="header">
-      <div class="logo">CVision</div>
-      <div class="nav-buttons">
-         <div class="nav-btn {'active' if active=='login' else ''}">Connexion</div>
-         <div class="nav-btn {'active' if active=='register' else ''}">S'inscrire</div>
-      </div>
-    </div>
-    """
-    st.components.v1.html(header_html, height=120)
-
-
 def show_login_page():
-    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-    render_auth_header("login")
-    st.markdown("</div>", unsafe_allow_html=True)
-    
     st.title("Login")
+    
     with st.form("login_form"):
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         submit = st.form_submit_button("Login")
+        
         if submit:
             if login(email, password):
                 st.session_state.page = PAGE_USER_PROFILE
                 st.rerun()
             else:
                 st.error("Invalid email or password")
-    st.markdown("---")
-    st.info("Vous n'avez pas de compte ?")
-    if st.button("Register", key="go_to_register"):
+    
+    st.write("Don't have an account?")
+    if st.button("Register", key="register_btn_login"):
         st.session_state.page = PAGE_REGISTER
         st.rerun()
 
-
 def show_register_page():
-    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-    render_auth_header("register")
-    st.markdown("</div>", unsafe_allow_html=True)
-    
     st.title("Register")
+    
     with st.form("register_form"):
         name = st.text_input("Username")
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         password_confirm = st.text_input("Confirm Password", type="password")
         submit = st.form_submit_button("Register")
+        
         if submit:
             if password != password_confirm:
                 st.error("Passwords do not match")
@@ -321,9 +215,9 @@ def show_register_page():
                 if register(name, email, password):
                     st.session_state.page = PAGE_USER_PROFILE
                     st.rerun()
-    st.markdown("---")
-    st.info("Vous avez déjà un compte ?")
-    if st.button("Login", key="go_to_login"):
+    
+    st.write("Already have an account?")
+    if st.button("Login", key="login_btn_register"):
         st.session_state.page = PAGE_LOGIN
         st.rerun()
 
@@ -333,103 +227,242 @@ def show_user_profile():
         st.rerun()
         
     username = st.session_state.user["name"]
-    st.title(f"Welcome, {username}!")
     
-    # Add CV upload section
-    st.header("Upload your CV")
-    
-    # Create a styled upload area
+    # Apply modern CSS styling
     st.markdown("""
     <style>
-    .uploadfile {
-        border: 2px dashed #aaa;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        margin: 10px 0;
-        background-color: white !important;
+    .main-header {
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        color: #1E88E5;
+        font-weight: 700;
     }
-    .uploadfile:hover {
-        border-color: #4285F4;
+    .section-container {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.5rem;
+    }
+    .btn-primary {
+        background-color: #1E88E5;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        background-color: #1565C0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .btn-secondary {
+        background-color: #f8f9fa;
+        color: #333;
+        border: 1px solid #ddd;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+        background-color: #e9ecef;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .danger-zone {
+        border-left: 4px solid #f44336;
+        padding-left: 1rem;
+    }
+    .upload-container {
+        border: 2px dashed #aaa;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    .upload-container:hover {
+        border-color: #1E88E5;
+        background-color: #f1f8fe;
+    }
+    .upload-icon {
+        font-size: 3rem;
+        color: #aaa;
+        margin-bottom: 1rem;
+    }
+    .welcome-card {
+        background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown("<p>Upload a PDF, JPEG, or PNG file of your CV:</p>", unsafe_allow_html=True)
+    # Welcome card with user information
+    st.markdown(f"""
+    <div class="welcome-card">
+        <h1 class="main-header">Welcome, {username}!</h1>
+        <p>Manage your professional profile and CV from this dashboard</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # File uploader
-    uploaded_file = st.file_uploader("Choose your CV file", 
-                                    type=["pdf", "jpg", "jpeg", "png"], 
-                                    key="cv_uploader",
-                                    help="Upload your CV to automatically generate your profile")
+    # Create tabs for better organization
+    tab1, tab2 = st.tabs(["Upload CV", "Manage Profile"])
     
-    if uploaded_file is not None:
-        # Show file details
-        file_details = {"Filename": uploaded_file.name, "File size": f"{uploaded_file.size / 1024:.2f} KB"}
-        st.write(file_details)
+    with tab1:
+        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-title">Upload your CV</h2>', unsafe_allow_html=True)
         
-        # Show preview based on file type
-        file_extension = uploaded_file.name.split('.')[-1].lower()
         
-        if file_extension in ['jpg', 'jpeg', 'png']:
-            st.image(uploaded_file, width=300, caption="Preview")
-        elif file_extension == 'pdf':
-            st.info("PDF preview not available. Click 'Process CV' to upload and process your CV.")
         
-        # Process button
-        if st.button("Process CV"):
-            with st.spinner("Processing your CV with AI... This may take a moment."):
-                success, message = upload_cv_file(username, uploaded_file)
+        uploaded_file = st.file_uploader("", 
+                                        type=["pdf", "jpg", "jpeg", "png"], 
+                                        key="cv_uploader",
+                                        help="Upload your CV to automatically generate your profile")
+        
+        if uploaded_file is not None:
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Show file details
+                st.markdown(f"""
+                <div style="padding: 1rem; background-color: #e3f2fd; border-radius: 4px; margin-bottom: 1rem;">
+                    <p><strong>File name:</strong> {uploaded_file.name}</p>
+                    <p><strong>Size:</strong> {uploaded_file.size / 1024:.2f} KB</p>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                if success:
-                    st.success(message)
-                    st.info("Navigating to your CV page in 3 seconds...")
-                    # Redirect to view CV after successful processing
-                    st.markdown(f"""
-                    <meta http-equiv="refresh" content="3; url={SERVER_URL}/user/{username}">
-                    """, unsafe_allow_html=True)
-                else:
-                    st.error(message)
+                # Process button
+                if st.button("Process CV", use_container_width=True):
+                    with st.spinner("Processing your CV with AI... This may take a moment."):
+                        success, message = upload_cv_file(username, uploaded_file)
+                        
+                        if success:
+                            st.success(message)
+                            
+            
+                        else:
+                            st.error(message)
+            
+            with col2:
+                # Show preview based on file type
+                file_extension = uploaded_file.name.split('.')[-1].lower()
+                
+                if file_extension in ['jpg', 'jpeg', 'png']:
+                    st.image(uploaded_file, width=200, caption="Preview")
+                elif file_extension == 'pdf':
+                    st.info("PDF preview not available")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown("<hr>", unsafe_allow_html=True)
+    with tab2:
+        # Action buttons with two columns
+        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-title">Manage Your CV</h2>', unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+          
+            
+            # Still need a hidden button for Streamlit to work
+            if st.button("View My CV", key="view_cv_btn_profile", use_container_width=True):
+                st.session_state.page = PAGE_VIEW_CV
+                st.rerun()
+        
+        with col2:
+            
+            
+            if st.button("Edit My CV", key="edit_cv_btn_profile", use_container_width=True):
+                st.session_state.page = PAGE_EDIT_CV
+                st.rerun()
+                
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Share CV section with improved styling
+        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-title">Share Your CV</h2>', unsafe_allow_html=True)
+        
+        public_cv_url = f"{SERVER_URL}/user/{username}"
+        st.markdown(f"""
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <p>Share your professional profile with this public link:</p>
+            <div style="background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; 
+            padding: 10px; display: flex; align-items: center; margin: 10px 0;">
+            <input type="text" value="{public_cv_url}" 
+            style="flex: 1; border: none; background: transparent; padding: 5px; font-size: 14px;" readonly>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("Copy Public CV URL"):
+            st.write(f"Copied to clipboard: {public_cv_url}")
+            st.session_state.copied_url = public_cv_url
+        
+        if "copied_url" in st.session_state:
+            st.success(f"Copied to clipboard: {st.session_state.copied_url}")
+        
+        st.markdown(f"""
+        <div style="text-align: center;">
+            <a href="{public_cv_url}" target="_blank" style="text-decoration: none;">
+            <div style="display: inline-block; padding: 10px 20px; background-color: #1E88E5; 
+            color: white; border-radius: 5px; font-weight: bold; margin-top: 10px;">
+                View Public CV
+            </div>
+            </a>
+            <p style="margin-top: 10px; font-size: 12px; color: #888;">
+            This link can be shared with anyone, even if they don't have an account.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Danger Zone
+        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        st.markdown('<div class="danger-zone">', unsafe_allow_html=True)
+        st.markdown('<h2 class="section-title" style="color: #d32f2f;">Danger Zone</h2>', unsafe_allow_html=True)
+        
+        with st.expander("Delete My CV"):
+            st.warning("Warning: This action cannot be undone. Your CV data will be permanently deleted.")
+            
+            # Two-step confirmation for deletion
+            confirm = st.checkbox("I understand that this action is irreversible", key="confirm_delete")
+            
+            if confirm:
+                if st.button("Delete CV Permanently", key="delete_cv_btn", type="primary"):
+                    with st.spinner("Deleting your CV..."):
+                        success, message = delete_cv(username)
+                        if success:
+                            st.success(message)
+                            st.info("Your CV has been deleted. You'll be redirected to your profile in 3 seconds...")
     
-    # Original buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("View My CV", key="view_cv_btn_profile"):
-            st.session_state.page = PAGE_VIEW_CV
+                        else:
+                            st.error(message)
+            else:
+                st.button("Delete CV Permanently", key="delete_cv_btn_disabled", disabled=True)
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        
+        # Logout button at the bottom
+        st.markdown('<div style="text-align: center; margin-top: 2rem;">', unsafe_allow_html=True)
+        if st.button("Logout", key="logout_btn_profile", type="secondary"):
+            logout()
             st.rerun()
-    
-    with col2:
-        if st.button("Edit My CV", key="edit_cv_btn_profile"):
-            st.session_state.page = PAGE_EDIT_CV
-            st.rerun()
-    
-    # Add delete CV button with confirmation
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color: #d32f2f;'>Danger Zone</h3>", unsafe_allow_html=True)
-    
-    with st.expander("Delete My CV"):
-        st.warning("Warning: This action cannot be undone. Your CV data will be permanently deleted.")
-        if st.button("Delete CV Permanently", key="delete_cv_btn"):
-            with st.spinner("Deleting your CV..."):
-                success, message = delete_cv(username)
-                if success:
-                    st.success(message)
-                    st.info("Your CV has been deleted. You'll be redirected to your profile in 3 seconds...")
-                    st.markdown(f"""
-                    <meta http-equiv="refresh" content="3; url={SERVER_URL}/user/{username}">
-                    """, unsafe_allow_html=True)
-                else:
-                    st.error(message)
-    
-    # Ajouter le lien vers le CV public
-    show_public_cv_link(username)
-    
-    if st.button("Logout", key="logout_btn_profile"):
-        logout()
-        st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
 def show_view_cv():
     if not st.session_state.user:
@@ -683,597 +716,19 @@ def show_edit_cv():
         if st.button("View CV", key="view_cv_btn_edit"):
             st.session_state.page = PAGE_VIEW_CV
             st.rerun()
-def show_home_page():
-    """Page d'accueil minimaliste avec couleurs pastel et design épuré"""
-    
-    # Utiliser le composant HTML pour un contrôle total sur le style
-    html_content = """
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-family: 'Poppins', sans-serif;
-            }
-            
-            body {
-                background-color: white;
-                color: #333;
-                line-height: 1.6;
-            }
-            
-            .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 2rem;
-                position: relative;
-            }
-            
-            /* Formes décoratives */
-            .shape {
-                position: absolute;
-                z-index: -1;
-                border-radius: 50%;
-                opacity: 0.6;
-                filter: blur(40px);
-            }
-            
-            .shape-1 {
-                width: 300px;
-                height: 300px;
-                background-color: #FAE7EB;
-                top: -50px;
-                right: 10%;
-            }
-            
-            .shape-2 {
-                width: 200px;
-                height: 200px;
-                background-color: #E0D4E7;
-                bottom: 10%;
-                left: 5%;
-            }
-            
-            .shape-3 {
-                width: 180px;
-                height: 180px;
-                background-color: #DBEEF7;
-                top: 40%;
-                right: 15%;
-            }
-            
-            .shape-4 {
-                width: 120px;
-                height: 120px;
-                background-color: #EECEDA;
-                top: 60%;
-                left: 25%;
-            }
-            
-            /* Header */
-            .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 1rem 0;
-                margin-bottom: 3rem;
-            }
-            
-            .logo {
-                font-size: 1.8rem;
-                font-weight: 700;
-                background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                letter-spacing: 0.02em;
-            }
-            
-            .nav-buttons {
-                display: flex;
-                gap: 1rem;
-            }
-            
-            .nav-btn {
-                padding: 0.5rem 1.5rem;
-                border-radius: 50px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 0.9rem;
-            }
-            
-            .login-btn {
-                color: #6a7b96;
-                border: 1px solid #CCDCEB;
-                background-color: white;
-            }
-            
-            .login-btn:hover {
-                background-color: #CCDCEB;
-                color: #333;
-            }
-            
-            .signup-btn {
-                background: linear-gradient(135deg, #BDD2E4, #CCDCEB);
-                color: #333;
-                border: none;
-                box-shadow: 0 4px 10px rgba(189, 210, 228, 0.3);
-            }
-            
-            .signup-btn:hover {
-                box-shadow: 0 6px 15px rgba(189, 210, 228, 0.5);
-                transform: translateY(-2px);
-            }
-            
-            /* Hero section */
-            .hero {
-                display: flex;
-                align-items: center;
-                min-height: 550px;
-                margin-bottom: 5rem;
-                position: relative;
-            }
-            
-            .hero-content {
-                width: 55%;
-                padding-right: 2rem;
-                position: relative;
-                z-index: 2;
-            }
-            
-            .hero-tagline {
-                display: inline-block;
-                padding: 0.3rem 1rem;
-                background-color: #FAE7EB;
-                border-radius: 50px;
-                font-size: 0.8rem;
-                font-weight: 600;
-                margin-bottom: 1.5rem;
-                color: #e06e8e;
-            }
-            
-            .hero-title {
-                font-size: 3.2rem;
-                font-weight: 700;
-                line-height: 1.2;
-                margin-bottom: 1.5rem;
-                color: #333;
-            }
-            
-            .hero-subtitle {
-                font-size: 1.1rem;
-                color: #6a7b96;
-                margin-bottom: 2.5rem;
-                max-width: 90%;
-            }
-            
-            .cta-buttons {
-                display: flex;
-                gap: 1rem;
-            }
-            
-            .primary-btn {
-                padding: 0.8rem 2rem;
-                border-radius: 50px;
-                font-weight: 600;
-                font-size: 1rem;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                background: linear-gradient(135deg, #EECEDA, #E0D4E7);
-                color: #333;
-                border: none;
-                box-shadow: 0 4px 15px rgba(238, 206, 218, 0.4);
-            }
-            
-            .primary-btn:hover {
-                box-shadow: 0 6px 20px rgba(238, 206, 218, 0.6);
-                transform: translateY(-3px);
-            }
-            
-            .secondary-btn {
-                padding: 0.8rem 2rem;
-                border-radius: 50px;
-                font-weight: 600;
-                font-size: 1rem;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                background-color: transparent;
-                color: #6a7b96;
-                border: 1px solid #CCDCEB;
-            }
-            
-            .secondary-btn:hover {
-                background-color: #CCDCEB;
-                color: #333;
-            }
-            
-            .hero-image-container {
-                width: 45%;
-                position: relative;
-                z-index: 1;
-            }
-            
-            .hero-image {
-                width: 100%;
-                height: auto;
-                object-fit: contain;
-                border-radius: 10px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-            }
-            
-            /* Features section */
-            .features {
-                margin-bottom: 6rem;
-            }
-            
-            .section-title {
-                text-align: center;
-                font-size: 2.2rem;
-                font-weight: 700;
-                margin-bottom: 3rem;
-                color: #333;
-            }
-            
-            .features-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 2rem;
-            }
-            
-            .feature-card {
-                background-color: white;
-                border-radius: 16px;
-                padding: 2rem;
-                text-align: center;
-                transition: all 0.3s ease;
-                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.02);
-                border: 1px solid #f5f5f5;
-            }
-            
-            .feature-card:hover {
-                transform: translateY(-10px);
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-            }
-            
-            .feature-icon {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 1.5rem;
-                font-size: 2rem;
-            }
-            
-            .icon-1 {
-                background-color: #FAE7EB;
-                color: #e06e8e;
-            }
-            
-            .icon-2 {
-                background-color: #E0D4E7;
-                color: #9b6dbb;
-            }
-            
-            .icon-3 {
-                background-color: #DBEEF7;
-                color: #5b9bd5;
-            }
-            
-            .feature-title {
-                font-size: 1.2rem;
-                font-weight: 600;
-                margin-bottom: 1rem;
-                color: #333;
-            }
-            
-            .feature-description {
-                font-size: 0.95rem;
-                color: #6a7b96;
-            }
-            
-            /* Testimonials */
-            .testimonials {
-                padding: 4rem 0;
-                background-color: #f9fafc;
-                border-radius: 30px;
-                margin-bottom: 5rem;
-            }
-            
-            .testimonial-card {
-                background-color: white;
-                border-radius: 16px;
-                padding: 2rem;
-                margin: 0 1.5rem;
-                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
-            }
-            
-            .testimonial-text {
-                font-size: 1.1rem;
-                font-style: italic;
-                color: #4a5568;
-                margin-bottom: 1.5rem;
-                line-height: 1.7;
-            }
-            
-            .testimonial-author {
-                display: flex;
-                align-items: center;
-            }
-            
-            .author-avatar {
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, #EECEDA, #E0D4E7);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 600;
-                color: white;
-                margin-right: 1rem;
-            }
-            
-            .author-info {
-                line-height: 1.4;
-            }
-            
-            .author-name {
-                font-weight: 600;
-                color: #333;
-            }
-            
-            .author-title {
-                font-size: 0.85rem;
-                color: #6a7b96;
-            }
-            
-            /* CTA Section */
-            .cta {
-                background: linear-gradient(135deg, #BDD2E4, #E0D4E7);
-                border-radius: 24px;
-                padding: 4rem 3rem;
-                text-align: center;
-                margin-bottom: 4rem;
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .cta-blob {
-                position: absolute;
-                border-radius: 50%;
-                background-color: rgba(255, 255, 255, 0.1);
-            }
-            
-            .blob-1 {
-                width: 200px;
-                height: 200px;
-                top: -100px;
-                right: -50px;
-            }
-            
-            .blob-2 {
-                width: 150px;
-                height: 150px;
-                bottom: -70px;
-                left: -40px;
-            }
-            
-            .cta-title {
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: white;
-                margin-bottom: 1.5rem;
-                position: relative;
-                z-index: 2;
-            }
-            
-            .cta-subtitle {
-                font-size: 1.1rem;
-                color: rgba(255, 255, 255, 0.9);
-                margin-bottom: 2.5rem;
-                max-width: 700px;
-                margin-left: auto;
-                margin-right: auto;
-                position: relative;
-                z-index: 2;
-            }
-            
-            /* Footer */
-            .footer {
-                text-align: center;
-                padding: 2rem 0;
-                color: #6a7b96;
-                font-size: 0.9rem;
-            }
-            
-            .footer-logo {
-                font-size: 1.5rem;
-                font-weight: 700;
-                margin-bottom: 1rem;
-                color: #333;
-            }
-            
-            /* Responsive */
-            @media (max-width: 1024px) {
-                .hero-content {
-                    width: 60%;
-                }
-                
-                .hero-image-container {
-                    width: 40%;
-                }
-                
-                .hero-title {
-                    font-size: 2.8rem;
-                }
-            }
-            
-            @media (max-width: 768px) {
-                .hero {
-                    flex-direction: column;
-                }
-                
-                .hero-content, .hero-image-container {
-                    width: 100%;
-                }
-                
-                .hero-content {
-                    margin-bottom: 3rem;
-                    padding-right: 0;
-                }
-                
-                .features-grid {
-                    grid-template-columns: 1fr;
-                    gap: 1.5rem;
-                }
-                
-                .cta {
-                    padding: 3rem 1.5rem;
-                }
-                
-                .cta-title {
-                    font-size: 2rem;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <!-- Formes décoratives -->
-            <div class="shape shape-1"></div>
-            <div class="shape shape-2"></div>
-            <div class="shape shape-3"></div>
-            <div class="shape shape-4"></div>
-            
-            <!-- Header -->
-            <header class="header">
-                <div class="logo">CVision</div>
-                <div class="nav-buttons">
-                    <a href="https://beneficial-liberation-production.up.railway.app/" class="nav-btn login-btn" id="login-nav">Connexion</a>
-                    <a href="https://beneficial-liberation-production.up.railway.app/" class="nav-btn signup-btn" id="signup-nav">S'inscrire</a>
-                </div>
-            </header>
-            
-            <!-- Hero Section -->
-            <section class="hero">
-                <div class="hero-content">
-                    <span class="hero-tagline">Alimenté par l'Intelligence Artificielle</span>
-                    <h1 class="hero-title">Transformez votre parcours en opportunités</h1>
-                    <p class="hero-subtitle">Créez un CV qui vous démarque grâce à notre analyse intelligente et nos designs minimalistes parfaitement adaptés aux recruteurs modernes.</p>
-                    <div class="cta-buttons">
-                        <a href="https://beneficial-liberation-production.up.railway.app/" class="primary-btn" id="create-cv-btn">Créer mon CV</a>
-                        <a href="https://beneficial-liberation-production.up.railway.app/" class="secondary-btn" id="discover-btn">Découvrir</a>
-                    </div>
-                </div>
-                <div class="hero-image-container">
-                    <img src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1050&q=80" alt="CV Design Example" class="hero-image">
-                </div>
-            </section>
-            
-            <!-- Features Section -->
-            <section class="features">
-                <h2 class="section-title">Pourquoi choisir CVision</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon icon-1">✨</div>
-                        <h3 class="feature-title">Analyse Intelligente</h3>
-                        <p class="feature-description">Notre IA identifie vos compétences clés et restructure votre parcours pour un impact maximal auprès des recruteurs.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon icon-2">🔍</div>
-                        <h3 class="feature-title">Optimisation ATS</h3>
-                        <p class="feature-description">Votre CV est optimisé pour passer les systèmes de tri automatisés utilisés par 90% des entreprises aujourd'hui.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon icon-3">🎨</div>
-                        <h3 class="feature-title">Design Épuré</h3>
-                        <p class="feature-description">Des mises en page élégantes et modernes qui mettent en valeur vos expériences sans surcharge visuelle.</p>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Testimonials -->
-            <section class="testimonials">
-                <h2 class="section-title">Témoignages</h2>
-                <div class="testimonial-card">
-                    <p class="testimonial-text">"J'ai téléchargé mon ancien CV et en quelques minutes, j'ai obtenu une version nettement plus professionnelle et pertinente. Trois entretiens décrochés la semaine suivante !"</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">ML</div>
-                        <div class="author-info">
-                            <div class="author-name">Marie Lemaire</div>
-                            <div class="author-title">UX Designer</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- CTA Section -->
-            <section class="cta">
-                <div class="cta-blob blob-1"></div>
-                <div class="cta-blob blob-2"></div>
-                <h2 class="cta-title">Prêt à transformer votre carrière ?</h2>
-                <p class="cta-subtitle">Rejoignez des milliers de professionnels qui ont déjà boosté leurs opportunités professionnelles grâce à CVision</p>
-                <a href="https://beneficial-liberation-production.up.railway.app/" class="primary-btn" id="final-cta-btn">Commencer maintenant</a>
-            </section>
-            
-            <!-- Footer -->
-            <footer class="footer">
-                <div class="footer-logo">CVision</div>
-                <p>© 2024 CVision | Tous droits réservés</p>
-            </footer>
-        </div>
-    </body>
-    </html>
-    """
-    
-    html(html_content, height=2500)
 
- 
-
-# Mise à jour de la fonction principale pour inclure la page d'accueil
 def main():
-    # Essayer de définir un arrière-plan
+    # Sidebar avec le nom de l'app
+    st.sidebar.title("CV Manager")
     
-    # Masquer les éléments Streamlit par défaut sur la page d'accueil
-    # if st.session_state.page == PAGE_HOME:
-    #     st.markdown("""
-    #         <style>
-    #         #MainMenu {visibility: hidden;}
-    #         header {visibility: hidden;}
-    #         footer {visibility: hidden;}
-    #         </style>
-    #         """, unsafe_allow_html=True)
-    
-    # Sidebar avec le nom de l'app (sauf sur la page d'accueil)
-    if st.session_state.page != PAGE_HOME:
-        st.sidebar.title("CV Manager")
-        
-        if st.session_state.user:
-            st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
-            if st.sidebar.button("Logout", key="logout_btn_sidebar"):
-                logout()
-                st.rerun()
-        else:
-            if st.sidebar.button("Page d'accueil", key="home_btn_sidebar"):
-                st.session_state.page = PAGE_HOME
-                st.rerun()
+    if st.session_state.user:
+        st.sidebar.write(f"Logged in as: {st.session_state.user['name']}")
+        if st.sidebar.button("Logout", key="logout_btn_sidebar"):
+            logout()
+            st.rerun()
     
     # Afficher la page actuelle
-    if st.session_state.page == PAGE_HOME:
-        show_home_page()
-    elif st.session_state.page == PAGE_LOGIN:
+    if st.session_state.page == PAGE_LOGIN:
         show_login_page()
     elif st.session_state.page == PAGE_REGISTER:
         show_register_page()
