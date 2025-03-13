@@ -13,8 +13,8 @@ from pydantic import BaseModel
 import tempfile
 import os
 from fastapi import UploadFile, File
-from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
-from modules.llm_structuring import structure_cv_json
+from server.modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
+from server.modules.llm_structuring import structure_cv_json
 
 
 from connection import connect_to_mysql, execute_query, close_connection
