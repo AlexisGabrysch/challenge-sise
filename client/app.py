@@ -176,6 +176,22 @@ def delete_cv(username: str) -> tuple:
     except Exception as e:
         return False, f"Error deleting CV: {str(e)}"
 
+def update_cv_image(username: str, file) -> tuple:
+    """Convert image to base64 and update via the update_cv_section API"""
+    try:
+        # Convert image to base64
+        import base64
+        file_bytes = file.getvalue()
+        base64_image = base64.b64encode(file_bytes).decode('utf-8')
+        
+        # Use the existing update_cv_section function
+        if update_cv_section(username, "image_base64", base64_image):
+            return True, "Profile image updated successfully"
+        else:
+            return False, "Failed to update profile image"
+    except Exception as e:
+        return False, f"Error processing image: {str(e)}"
+
 def show_login_page():
     st.title("Login")
     
@@ -543,6 +559,38 @@ def show_edit_cv():
     
     # Personal information section
     st.header("Personal Information")
+    
+    # Profile Image Section
+    st.subheader("Profile Image")
+    
+    # Afficher l'image actuelle si elle existe
+    if cv_data.get("image_base64"):
+        st.image(
+            f"data:image/jpeg;base64,{cv_data['image_base64']}", 
+            width=150, 
+            caption="Current Profile Image"
+        )
+    
+    # Upload d'une nouvelle image
+    uploaded_image = st.file_uploader(
+        "Upload new profile image", 
+        type=["jpg", "jpeg", "png"],
+        key="profile_image_uploader",
+        help="Upload a new profile picture (JPG or PNG format)"
+    )
+    
+    if uploaded_image is not None:
+        # Afficher l'aperçu
+        st.image(uploaded_image, width=150, caption="Preview")
+        
+        if st.button("Update Profile Image"):
+            with st.spinner("Updating your profile image..."):
+                success, message = update_cv_image(username, uploaded_image)
+                if success:
+                    st.success(message)
+                    st.info("Your profile has been updated. Refresh the page to see changes.")
+                else:
+                    st.error(message)
     
     # Name fields
     col1, col2 = st.columns(2)
