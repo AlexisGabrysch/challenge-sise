@@ -3,7 +3,7 @@ import json
 from mistralai import Mistral
 from mistralai import DocumentURLChunk, ImageURLChunk, TextChunk
 from pathlib import Path
-from config import API_KEY
+from .config import API_KEY
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
