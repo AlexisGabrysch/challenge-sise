@@ -369,9 +369,11 @@
         }
     </style>
 <body>
-    <div class="theme-toggle" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-        <button style="padding: 8px 15px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=ats'">Thème ATS</button>
-    </div>
+<!-- Dans la div theme-toggle, ajouter le bouton vers le thème cyberpunk -->
+<div class="theme-toggle" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
+    <button style="padding: 8px 15px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=ats'">Thème ATS</button>
+    <button style="padding: 8px 15px; background-color: #12122a; color: #ffafcc; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=cyberpunk'">Thème Cyberpunk</button>
+</div>
     <div class="container">
         <!-- Header du CV -->
         <div class="cv-header" id="header-section">

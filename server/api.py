@@ -922,7 +922,6 @@ async def logout():
 async def test(request: Request):
     logger.debug("Test endpoint accessed")
     return HTMLResponse(content="<html><body><h1>API works!</h1></body></html>")
-
 @app.get("/users/{name}", response_class=HTMLResponse)
 @app.get("/user/{name}", response_class=HTMLResponse)
 async def user_page(request: Request, name: str, theme: str = None):
@@ -935,6 +934,7 @@ async def user_page(request: Request, name: str, theme: str = None):
             user_id = get_or_create_user_by_name(name)
         else:
             user_id = str(user["_id"])
+        
         # Get CV content
         cv_doc = cvs_collection.find_one({"user_id": ObjectId(user_id)})
         
@@ -958,16 +958,18 @@ async def user_page(request: Request, name: str, theme: str = None):
             "CLIENT_URL": CLIENT_URL,
             "is_owner": is_owner,
             "logged_in": current_user is not None,
-            "current_user_name": current_user_name
+            "current_user_name": current_user_name,
+            # Pass the entire CV document as cv
+            "cv": cv_doc["sections"] if cv_doc and "sections" in cv_doc else {}
         }
         
-        # No default values - only pass sections that exist in CV
+        # Also add the traditional data format for backwards compatibility
         if cv_doc and "sections" in cv_doc:
             cv = cv_doc["sections"]
             
             # Map MongoDB document structure to template fields
             
-            # Header (full name)
+       # Header (full name)
             if "first_name" in cv and "last_name" in cv:
                 template_data["header"] = f"{cv['first_name']} {cv['last_name']}"
             elif "first_name" in cv:
@@ -976,6 +978,23 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["header"] = cv['last_name']
             else:
                 template_data["header"] = name
+
+            if "image" in cv:
+                img = cv["image"]
+                if img and isinstance(img, dict) and "image_base64" in img:
+                    template_data["cv"]["image_base64"] = img["image_base64"]
+                elif img and isinstance(img, str):
+                    # Si l'image est déjà une chaîne base64
+                    template_data["cv"]["image_base64"] = img
+                else:
+                    # S'assurer que template_data["cv"] existe
+                    if "cv" not in template_data:
+                        template_data["cv"] = {}
+                    template_data["cv"]["image_base64"] = None
+            elif "image_base64" in cv:  # Vérifier aussi directement pour image_base64
+                template_data["cv"] = template_data.get("cv", {})
+                template_data["cv"]["image_base64"] = cv["image_base64"]
+
                 
             # Section 1 (About)
             if "summary" in cv:
@@ -1044,6 +1063,7 @@ async def user_page(request: Request, name: str, theme: str = None):
                     </div>
                     '''
                 languages_html += '</div>\n'
+            
             # Hobbies
             hobbies_html = ""
             if "hobbies" in cv and cv["hobbies"]:
@@ -1055,7 +1075,6 @@ async def user_page(request: Request, name: str, theme: str = None):
                     </div>
                     '''
                 hobbies_html += '</div>\n'
-            
             # Certifications
             certifications_html = ""
             if "certifications" in cv and cv["certifications"]:
@@ -1094,16 +1113,18 @@ async def user_page(request: Request, name: str, theme: str = None):
                 template_data["driving_license"] = cv["driving_license"]
                 
         # Select template based on theme
-        template_name = "user_template_ats.html" if theme == "ats" else "user_template.html"
+        if theme == "ats":
+            template_name = "user_template_ats.html"
+        elif theme == "cyberpunk":
+            template_name = "user_template_cyberpunk.html"
+        else:
+            template_name = "user_template.html"
         
         return templates.TemplateResponse(template_name, template_data)
         
     except Exception as e:
-        logger.error(f"Error serving user page: {e}")
+        logger.error(f"Error serving user page: {e}", exc_info=True)
         return HTMLResponse(content=f"<html><body><h1>Error</h1><p>{str(e)}</p></body></html>", status_code=500)
-    
-    
-   
 
 if __name__ == "__main__":
     # Get port from environment variable or use default

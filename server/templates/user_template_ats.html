@@ -401,9 +401,11 @@
     </style>
 </head>
 <body>
-    <div class="theme-toggle">
-        <button class="theme-btn" onclick="window.location.href='./{{ name }}?theme=default'">Thème Coloré</button>
-    </div>
+<!-- Dans user_template_ats.html, ajouter les boutons pour les autres thèmes -->
+<div class="theme-toggle" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
+    <button style="padding: 8px 15px; background-color: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}'">Thème Standard</button>
+    <button style="padding: 8px 15px; background-color: #12122a; color: #ffafcc; border: none; border-radius: 5px; cursor: pointer;" onclick="window.location.href='./{{ name }}?theme=cyberpunk'">Thème Cyberpunk</button>
+</div>
 
     <div class="container">
         <!-- En-tête du CV -->
