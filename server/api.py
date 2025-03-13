@@ -426,14 +426,18 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
             remove_background_from_pdf(temp_path, cleaned_pdf_path)
             
             # Extract text from the cleaned PDF
-            text = extract_text_from_pdf(cleaned_pdf_path)
+            text_noir_blanc = extract_text_from_pdf(cleaned_pdf_path)
             
             # Clean up the cleaned PDF file
             os.unlink(cleaned_pdf_path)
         elif file_extension in ['jpg', 'jpeg', 'png']:
-            text = extract_text_from_image(temp_path)
+            text_original = extract_text_from_image(temp_path)
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format")
+        
+
+        # Combine text from both versions
+        text = f"{text_noir_blanc}\n\n{text_original}"
         
         # Structure CV data with LLM
         cv_data = structure_cv_json(text)
