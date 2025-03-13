@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie, Body, Header
+from fastapi import FastAPI, Request, Form, HTTPException, Depends, Cookie, Body, Header, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +18,20 @@ import tempfile
 
 from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
 from modules.llm_structuring import structure_cv_json
+
+# Classes pour validation
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class CVUpdateRequest(BaseModel):
+    section: str
+    content: str
 
 # Configuration du logging
 logging.basicConfig(
@@ -284,7 +298,6 @@ async def api_register(register_data: RegisterRequest):
     
     except HTTPException as e:
         raise e
-
 @app.get("/api/cv/{name}")
 async def api_get_cv(name: str, authorization: str = Header(None)):
     """API endpoint pour récupérer les données du CV"""
@@ -294,38 +307,47 @@ async def api_get_cv(name: str, authorization: str = Header(None)):
     user = users_collection.find_one({"user_name": name})
     
     if not user:
-        # Create user if not exists
-        user_id = get_or_create_user_by_name(name)
+        # Create a new user if not found
+        user_id = get_or_create_user(name)
     else:
         user_id = str(user["_id"])
     
-    # Get CV content
-    cv = get_cv_content(user_id)
+    # Get CV data from MongoDB
+    cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})
     
-    # Create response with available sections
-    response = {"name": name}
+    # Get default sections if CV doesn't exist
+    if not cv:
+        cv = {
+            "sections": {
+                "header": name,
+                "section1": "Développeur web passionné avec plus de 5 ans d'expérience.",
+                "section2": "<div class=\"hobbies-list\">\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">🏃</div>\n        <span>Course à pied</span>\n    </div>\n    <div class=\"hobby-item\">\n        <div class=\"hobby-icon\">📚</div>\n        <span>Lecture</span>\n    </div>\n</div>",
+                "experience": '<div class="timeline-item">\n    <div class="date">Jan 2023 - Présent</div>\n    <h3 class="timeline-title">Développeur Full Stack</h3>\n    <div class="organization">Tech Solutions Inc.</div>\n    <p class="description">Développement et maintenance d\'applications web utilisant React, Node.js et MongoDB.</p>\n</div>',
+                "education": '<div class="timeline-item">\n    <div class="date">2019 - 2022</div>\n    <h3 class="timeline-title">Master en Informatique</h3>\n    <div class="organization">Université de Paris</div>\n    <p class="description">Spécialisation en développement web et applications mobiles.</p>\n</div>',
+                "skills": '<div class="skill-tag">JavaScript</div>\n<div class="skill-tag">React.js</div>\n<div class="skill-tag">Node.js</div>',
+                "title": "Développeur Full Stack",
+                "email": f"{name}@example.com",
+                "phone": "06 12 34 56 78",
+                "location": "Paris, France",
+                "linkedin": f"linkedin.com/in/{name}"
+            }
+        }
     
-    # Get fields from MongoDB or set defaults for basic and required fields
-    response["header"] = cv.get("header") or name
-    response["section1"] = cv.get("section1") or "Développeur web passionné avec plus de 5 ans d'expérience."
-    response["section2"] = cv.get("section2") or '<div class="hobbies-list"><div class="hobby-item"><div class="hobby-icon">🏃</div><span>Course à pied</span></div><div class="hobby-item"><div class="hobby-icon">📚</div><span>Lecture</span></div></div>'
-    
-    # Add optional fields only if they exist in the CV
-    for field in ["experience", "education", "skills", "title", "email", "phone", "location"]:
-        if cv.get(field):
-            response[field] = cv[field]
-        else:
-            # Add default values for certain fields
-            if field == "title":
-                response[field] = "Développeur Full Stack"
-            elif field == "email":
-                response[field] = f"{name}@example.com"
-            elif field == "phone":
-                response[field] = "06 12 34 56 78"
-            elif field == "location":
-                response[field] = "Paris, France"
-    
-    return response
+    # Return CV data
+    return {
+        "name": name,
+        "header": cv["sections"].get("header", name),
+        "section1": cv["sections"].get("section1", ""),
+        "section2": cv["sections"].get("section2", ""),
+        "experience": cv["sections"].get("experience", ""),
+        "education": cv["sections"].get("education", ""),
+        "skills": cv["sections"].get("skills", ""),
+        "title": cv["sections"].get("title", "Développeur Full Stack"),
+        "email": cv["sections"].get("email", f"{name}@example.com"),
+        "phone": cv["sections"].get("phone", "06 12 34 56 78"),
+        "location": cv["sections"].get("location", "Paris, France"),
+        "linkedin": cv["sections"].get("linkedin", f"linkedin.com/in/{name}")
+    }
 
 @app.post("/api/cv/{name}/update")
 async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: str = Header(None)):
@@ -334,23 +356,100 @@ async def api_update_cv(name: str, update_data: CVUpdateRequest, authorization: 
     
     # Extract session token from Authorization header
     session_token = None
-    if (authorization and authorization.startswith("Bearer ")):
+    if authorization and authorization.startswith("Bearer "):
         session_token = authorization[7:]  # Remove "Bearer " prefix
     
     # Check authorization - only page owner can update
     if not session_token or not is_page_owner(session_token, name):
         raise HTTPException(status_code=403, detail="You don't have permission to edit this page")
     
-    # Get user by name
+    # Get user id
     user = users_collection.find_one({"user_name": name})
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Update CV section
-    update_cv_section(str(user["_id"]), update_data.section, update_data.content)
+    user_id = str(user["_id"])
+    
+    # Update content
+    update_cv_section(user_id, update_data.section, update_data.content)
     
     return {"status": "success"}
+
+@app.post("/api/cv/{name}/upload")
+async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
+    """API endpoint for uploading and processing a CV file"""
+    logger.debug(f"API Upload CV: {name}")
+    
+    # Extract session token from Authorization header
+    session_token = None
+    if authorization and authorization.startswith("Bearer "):
+        session_token = authorization[7:]  # Remove "Bearer " prefix
+    
+    # Check authorization - only page owner can upload
+    if not session_token or not is_page_owner(session_token, name):
+        raise HTTPException(status_code=403, detail="You don't have permission to upload for this user")
+    
+    # Get user
+    user = users_collection.find_one({"user_name": name})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_id = str(user["_id"])
+    
+    # Save the file temporarily
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        contents = await file.read()
+        temp_file.write(contents)
+        temp_path = temp_file.name
+    
+    try:
+        # Extract text based on file type
+        file_extension = file.filename.split('.')[-1].lower()
+        
+        if file_extension in ['pdf']:
+            text = extract_text_from_pdf(temp_path)
+        elif file_extension in ['jpg', 'jpeg', 'png']:
+            text = extract_text_from_image(temp_path)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file format")
+        
+        # Structure CV data with LLM
+        cv_data = structure_cv_json(text)
+        
+        # Update CV sections with extracted data
+        cv = cvs_collection.find_one({"user_id": ObjectId(user_id)})
+        
+        if not cv:
+            # Create new CV document
+            cv_data = {
+                "user_id": ObjectId(user_id),
+                "sections": cv_data,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            cvs_collection.insert_one(cv_data)
+        else:
+            # Update existing CV document with all sections
+            cvs_collection.update_one(
+                {"_id": cv["_id"]},
+                {
+                    "$set": {
+                        "sections": cv_data,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+        
+        return {"status": "success", "message": "CV processed successfully"}
+    
+    except Exception as e:
+        logger.error(f"Error processing CV: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing CV: {str(e)}")
+    
+    finally:
+        # Clean up the temporary file
+        os.unlink(temp_path)
 
 # Web Routes
 @app.get("/", response_class=HTMLResponse)
@@ -582,194 +681,6 @@ async def update_content(
     logger.debug(f"Redirecting to: {redirect_path}")
     return RedirectResponse(url=redirect_path, status_code=303)
 
-@app.post("/api/cv/{name}/upload")
-async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: str = Header(None)):
-    """API endpoint for uploading and processing a CV file"""
-    logger.debug(f"API Upload CV: {name}, File: {file.filename}")
-    
-    # Extract session token from Authorization header
-    session_token = None
-    if (authorization and authorization.startswith("Bearer ")):
-        session_token = authorization[7:]  # Remove "Bearer " prefix
-    
-    # Check authorization - only page owner can update
-    if not session_token or not is_page_owner(session_token, name):
-        raise HTTPException(status_code=403, detail="You don't have permission to upload for this user")
-    
-    # Get user
-    user = users_collection.find_one({"user_name": name})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user_id = str(user["_id"])
-    
-    # Check file type
-    file_extension = file.filename.split('.')[-1].lower()
-    allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png']
-    
-    if file_extension not in allowed_extensions:
-        raise HTTPException(status_code=400, detail=f"Unsupported file format: {file_extension}. Please upload PDF, JPEG, or PNG.")
-    
-    try:
-        # Save the uploaded file to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as temp_file:
-            # Read file
-            contents = await file.read()
-            temp_file.write(contents)
-            temp_file_path = temp_file.name
-            
-        # Process the file with OCR based on file type
-        if file_extension == 'pdf':
-            ocr_text = extract_text_from_pdf(temp_file_path)
-        else:  # jpg, jpeg, png
-            ocr_text = extract_text_from_image(temp_file_path)
-            
-        # Structure the CV text using Mistral
-        structured_cv = structure_cv_json(ocr_text)
-        
-        # Clean up the temporary file
-        os.unlink(temp_file_path)
-        
-        # Create CV document
-        cv_data = {
-            "user_id": user_id,
-            "last_updated": datetime.utcnow()
-        }
-        
-        # Extract name for header
-        if structured_cv.get("first_name") and structured_cv.get("last_name"):
-            cv_data["header"] = f"{structured_cv['first_name']} {structured_cv['last_name']}"
-        else:
-            cv_data["header"] = name.capitalize()
-        
-        # Create About section (section1) from structured data
-        about_section = ""
-        
-        # Add introduction if we have educational background
-        if structured_cv.get("education"):
-            highest_edu = structured_cv["education"][0]  # Assuming education is sorted with most recent first
-            about_section += f"Professional with education in {highest_edu.get('degree', 'higher education')} "
-            about_section += f"from {highest_edu.get('school', 'a recognized institution')}. "
-            
-        # Add work experience summary
-        if structured_cv.get("work_experience"):
-            latest_job = structured_cv["work_experience"][0]  # Assuming work experience is sorted
-            about_section += f"Experienced {latest_job.get('job_title', 'professional')} "
-            about_section += f"with background at {latest_job.get('company', 'reputable organizations')}. "
-            
-        # Add skills summary
-        if structured_cv.get("skills") and len(structured_cv["skills"]) > 0:
-            about_section += f"Skilled in {', '.join(structured_cv['skills'][:5])}."
-            
-        cv_data["section1"] = about_section
-            
-        # Create hobbies/interests section (section2)
-        hobbies_html = "<div class=\"hobbies-list\">\n"
-        
-        # Add hobbies with emojis
-        hobby_emojis = {"sports": "🏃", "reading": "📚", "travel": "✈️", 
-                       "music": "🎵", "cooking": "🍳", "photography": "📷",
-                       "art": "🎨", "gaming": "🎮", "languages": "🗣️"}
-                       
-        if structured_cv.get("hobbies"):
-            for hobby in structured_cv["hobbies"]:
-                emoji = "🔍"  # Default emoji
-                for keyword, emoji_char in hobby_emojis.items():
-                    if keyword.lower() in hobby.lower():
-                        emoji = emoji_char
-                        break
-                        
-                hobbies_html += f"""    <div class="hobby-item">
-    <div class="hobby-icon">{emoji}</div>
-    <span>{hobby}</span>
-</div>\n"""
-        
-        # If no hobbies found, add languages as additional info
-        elif structured_cv.get("languages"):
-            for lang, level in structured_cv["languages"].items():
-                hobbies_html += f"""    <div class="hobby-item">
-    <div class="hobby-icon">🗣️</div>
-    <span>{lang} ({level})</span>
-</div>\n"""
-        
-        hobbies_html += "</div>"
-        
-        cv_data["section2"] = hobbies_html
-            
-        # Create experience timeline HTML
-        experience_html = ""
-        if structured_cv.get("work_experience"):
-            for job in structured_cv["work_experience"]:
-                experience_html += f"""<div class="timeline-item">
-<div class="date">{job.get('duration', 'N/A')}</div>
-<h3 class="timeline-title">{job.get('job_title', 'Role')}</h3>
-<div class="organization">{job.get('company', 'Company')}</div>
-<p class="description">{job.get('description', '')}</p>
-</div>\n"""
-            
-        if experience_html:
-            cv_data["experience"] = experience_html
-            
-        # Create education timeline HTML
-        education_html = ""
-        if structured_cv.get("education"):
-            for edu in structured_cv["education"]:
-                education_html += f"""<div class="timeline-item">
-<div class="date">{edu.get('year', 'N/A')}</div>
-<h3 class="timeline-title">{edu.get('degree', 'Degree')}</div>
-<div class="organization">{edu.get('school', 'Institution')}</div>
-<p class="description">{edu.get('details', '')}</p>
-</div>\n"""
-                
-        if education_html:
-            cv_data["education"] = education_html
-            
-        # Create skills HTML
-        skills_html = ""
-        if structured_cv.get("skills"):
-            for skill in structured_cv["skills"]:
-                skills_html += f'<div class="skill-tag">{skill}</div>\n'
-                
-        if skills_html:
-            cv_data["skills"] = skills_html
-                
-        # Additional fields
-        if structured_cv.get("work_experience") and structured_cv["work_experience"]:
-            job_title = structured_cv["work_experience"][0].get("job_title", "Professional")
-            cv_data["title"] = job_title
-            
-        if structured_cv.get("email"):
-            cv_data["email"] = structured_cv["email"]
-            
-        if structured_cv.get("phone"):
-            cv_data["phone"] = structured_cv["phone"]
-            
-        if structured_cv.get("address"):
-            cv_data["location"] = structured_cv["address"]
-        
-        # Update or insert the CV data
-        cvs_collection.update_one(
-            {"user_id": user_id},
-            {"$set": cv_data},
-            upsert=True
-        )
-        
-        sections_updated = list(cv_data.keys())
-        sections_updated.remove("user_id")
-        sections_updated.remove("last_updated")
-        
-        return {
-            "status": "success", 
-            "message": f"CV processed successfully for {name}",
-            "sections_updated": sections_updated
-        }
-            
-    except Exception as e:
-        logger.error(f"Error processing CV file: {str(e)}")
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
-        raise HTTPException(status_code=500, detail=f"Error processing CV: {str(e)}")
 
 if __name__ == "__main__":
     # Get port from environment variable or use default
