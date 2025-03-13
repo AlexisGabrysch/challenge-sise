@@ -42,7 +42,7 @@ docker build -t cvvision .
 
 ### 3) Lancer le conteneur
 ```bash
-docker run -p 8501:8501 cvvision
+docker run -p 8000:8000 cvvision
 ```
 
 ## 📩 Contact & Feedback  
