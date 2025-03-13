@@ -6,8 +6,7 @@ client = MongoClient(MONGO_URI)
 
 # 📌 Sélection de la base de données et collection
 db = client["Challenge_SISE"]
-fr_cv_collection = db["cv_fr"]
-en_cv_collection = db["cv_en"]
+cv_collection = db["cvs"]
 user_collection = db["users"]
 
 def add_cv_to_user(email: str, cv_fr: dict, cv_en: dict):
@@ -21,13 +20,20 @@ def add_cv_to_user(email: str, cv_fr: dict, cv_en: dict):
 
     user_id = user["_id"]
 
-    existing_cv = fr_cv_collection.find_one({"user_id": user_id})
+    existing_cv = cv_collection.find_one({"user_id": user_id})
     if existing_cv:
         print(f"⚠️ Un CV est déjà attribué à cet utilisateur.")
         return False
 
-    # Associer le CV original et sa traduction à l'utilisateur
-    fr_cv_collection.insert_one(cv_fr)
-    en_cv_collection.insert_one(cv_en)
-    print(f"✅ CV attribué à {email} avec succès !")
-    return True
+    update_result = cv_collection.update_one(
+        {"email": email},
+        {"$set": {"cv_fr": cv_fr, "cv_en": cv_en}},  # ✅ On stocke bien les deux versions
+        upsert=True
+    )
+
+    if update_result.modified_count > 0 or update_result.upserted_id:
+        print(f"✅ CV mis à jour/enregistré avec succès pour {email}")
+        return True
+    else:
+        print(f"❌ Échec de l'enregistrement du CV pour {email}")
+        return False

@@ -1,4 +1,5 @@
 import time
+from modules.llm_translation import translate_cv_json
 from modules.pdf_preprocessing import remove_background_from_pdf
 from modules.user_utils import register_user
 from modules.cv_utils import add_cv_to_user
@@ -55,11 +56,11 @@ def process_user_and_cv(email, password, user_name, pdf_path):
     """
 
     print("🤖 Structuration du CV avec Mistral-8B...")
-    cv_fr, cv_en = structure_cv_json(combined_text)
-    print(cv_fr)
+    structured_cv = structure_cv_json(combined_text)
+    cv_fr, cv_en = translate_cv_json(structured_cv)
 
     print(f"💾 Enregistrement du CV et de la première image dans MongoDB Atlas...")
-    cv_fr["image"] = first_image  # On stocke **uniquement la première image trouvée**
+    structured_cv["image"] = first_image  # On stocke **uniquement la première image trouvée**
     success = add_cv_to_user(email, cv_fr, cv_en)
 
     if success:
