@@ -6,11 +6,11 @@ from modules.ocr_extraction import extract_text_from_pdf
 from modules.llm_structuring import structure_cv_json
 
 # 📌 Infos utilisateur + Fichier CV
-USER_EMAIL = "alexiiiiis@email.com"
-USER_PASSWORD = "alexiiiiis"
-USER_NAME = "alexiiis"
-PDF_PATH = "CV/CV_Alexis_DARDELET_stage_data_analyst.pdf"
-CLEAN_PDF_PATH = "CV/CV_Alexis_DARDELET_stage_data_analyst-clean.pdf"
+USER_EMAIL = "guillaume@email.com"
+USER_PASSWORD = "guillaume123"
+USER_NAME = "guillaume"
+PDF_PATH = "CV/cv-guillaume.pdf"
+CLEAN_PDF_PATH = "CV/cv-guillaume-clean.pdf"
 
 # 📌 Pipeline : Création utilisateur → Extraction OCR des 2 versions → Fusion → Attribution du CV
 def process_user_and_cv(email, password, user_name, pdf_path):

@@ -36,6 +36,11 @@ The OCR was performed on two versions of the document:
 Convert this into a well-structured JSON response following the exact schema below.  
 Ensure all extracted information is accurate, well-formatted, and **free of redundancy**.  
 If a field is missing or not found in the text, **leave it empty** but **do not fabricate data**.
+determine their most appropriate title (e.g., 'Master’s Student in Data Science', 'AI Researcher', 'Professor', etc.).
+If a specific title is not provided, infer the best possible one based on their education, experience, and skills. 
+Ensure the title is professional, relevant to their field, and aligns with common industry terminology
+For the summary, extract the most relevant professional summary or objective statement from the text. 
+If none is available, generate a concise two-line summary that effectively highlights their expertise and career objectives.
 
 ### Expected JSON Structure:
 {{
@@ -44,6 +49,8 @@ If a field is missing or not found in the text, **leave it empty** but **do not 
     "email": "Candidate's email (if available)",
     "phone": "Candidate's phone number (if available)",
     "address": "Full postal address (if available)",
+    "title": "Professional title (e.g., 'Data Scientist', 'Software Engineer')",
+    "summary": "Professional summary or objective",
     "driving_license": "Type of driving license (if mentioned, else empty)",
     "education": [
         {{
