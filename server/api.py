@@ -18,6 +18,8 @@ import tempfile
 import json
 from modules.ocr_extraction import extract_text_from_pdf, extract_text_from_image
 from modules.llm_structuring import structure_cv_json
+from modules.pdf_preprocessing import remove_background_from_pdf
+
 
 # Classes pour validation
 class LoginRequest(BaseModel):
@@ -417,7 +419,17 @@ async def api_upload_cv(name: str, file: UploadFile = File(...), authorization: 
         file_extension = file.filename.split('.')[-1].lower()
         
         if file_extension in ['pdf']:
-            text = extract_text_from_pdf(temp_path)
+            # Create a temporary file for the cleaned PDF
+            cleaned_pdf_path = f"{temp_path}_cleaned.pdf"
+            
+            # Remove background from PDF to improve OCR quality
+            remove_background_from_pdf(temp_path, cleaned_pdf_path)
+            
+            # Extract text from the cleaned PDF
+            text = extract_text_from_pdf(cleaned_pdf_path)
+            
+            # Clean up the cleaned PDF file
+            os.unlink(cleaned_pdf_path)
         elif file_extension in ['jpg', 'jpeg', 'png']:
             text = extract_text_from_image(temp_path)
         else:

@@ -6,3 +6,5 @@ python-multipart==0.0.9
 mistralai
 pymongo
 bcrypt
+fitz
+cv2
