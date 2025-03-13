@@ -378,16 +378,16 @@
             <button class="edit-btn" onclick="toggleEdit('header')">Modifier</button>
             <div class="profile-info">
                 <h1 class="name">{{ header }}</h1>
-                <p class="title">{{ title|default('Développeur Full Stack') }}</p>
+                <p class="title">{{ title|default('Votre Titre') }}</p>
                 <div class="contact-info">
                     <div class="contact-item">
                         <span>📧 {{ email|default('email@example.com') }}</span>
                     </div>
                     <div class="contact-item">
-                        <span>📱 {{ phone|default('06 12 34 56 78') }}</span>
+                        <span>📱 {{ phone|default('Votre Numéro') }}</span>
                     </div>
                     <div class="contact-item">
-                        <span>📍 {{ location|default('Paris, France') }}</span>
+                        <span>📍 {{ location|default('Ville, Pays') }}</span>
                     </div>
                 </div>
             </div>
@@ -435,12 +435,6 @@
                         <p class="description">Développement et maintenance d\'applications web utilisant React, Node.js et MongoDB. Collaboration avec une équipe de 5 développeurs.</p>
                     </div>
                     <div class="timeline-item">
-                        <div class="date">Mar 2021 - Déc 2022</div>
-                        <h3 class="timeline-title">Développeur Front-End</h3>
-                        <div class="organization">Digital Agency</div>
-                        <p class="description">Conception et développement d\'interfaces utilisateur réactives et accessibles. Utilisation de HTML5, CSS3 et JavaScript.</p>
-                    </div>
-                    <div class="timeline-item">
                         <div class="date">Sep 2020 - Fév 2021</div>
                         <h3 class="timeline-title">Stage en Développement Web</h3>
                         <div class="organization">StartupLab</div>
@@ -456,12 +450,6 @@
     <h3 class="timeline-title">Développeur Full Stack</h3>
     <div class="organization">Tech Solutions Inc.</div>
     <p class="description">Développement et maintenance d\'applications web utilisant React, Node.js et MongoDB. Collaboration avec une équipe de 5 développeurs.</p>
-</div>
-<div class="timeline-item">
-    <div class="date">Mar 2021 - Déc 2022</div>
-    <h3 class="timeline-title">Développeur Front-End</h3>
-    <div class="organization">Digital Agency</div>
-    <p class="description">Conception et développement d\'interfaces utilisateur réactives et accessibles. Utilisation de HTML5, CSS3 et JavaScript.</p>
 </div>
 <div class="timeline-item">
     <div class="date">Sep 2020 - Fév 2021</div>
@@ -588,9 +576,9 @@
         <div class="bottom-actions">
             {% if logged_in %}
                 {% if not is_owner %}
-                    <a href="{{ SERVER_URL }}/user/{{ current_user_name }}" class="action-btn">Voir mon CV</a>
+                    <a href="{{ CLIENT_URL }}/user/{{ current_user_name }}" class="action-btn">Voir mon CV</a>
                 {% else %}
-                    <a href="{{ SERVER_URL }}/logout" class="action-btn secondary-btn">Déconnexion</a>
+                    <a href="{{ CLIENT_URL }}/logout" class="action-btn secondary-btn">Déconnexion</a>
                 {% endif %}
             {% else %}
                 <a href="{{ CLIENT_URL }}" class="action-btn">Connexion</a>
