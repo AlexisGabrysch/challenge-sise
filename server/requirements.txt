@@ -7,4 +7,4 @@ mistralai
 pymongo
 bcrypt
 fitz
-cv2
+opencv-python
