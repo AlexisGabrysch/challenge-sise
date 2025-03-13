@@ -619,351 +619,261 @@ def show_edit_cv():
             st.rerun()
 
 def show_home_page():
-    """Nouvelle page d'accueil moderne et business-orientée"""
+    """Page d'accueil moderne et business-orientée avec des composants Streamlit natifs"""
     
-    # CSS personnalisé pour la page d'accueil
+    # CSS personnalisé pour améliorer l'apparence
     st.markdown("""
     <style>
-    .main-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
+    .stApp {
+        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        background-attachment: fixed;
+    }
+    
+    h1, h2, h3, p {
+        color: white;
     }
     
     .hero-section {
         text-align: center;
-        padding: 60px 20px;
+        padding: 2rem;
         border-radius: 10px;
-        margin-bottom: 40px;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(5px);
         box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+        margin-bottom: 2rem;
     }
     
     .hero-title {
-        font-size: 3.5rem;
-        font-weight: 700;
-        margin-bottom: 20px;
-        color: white;
+        font-size: 3rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 1rem !important;
         text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
     }
     
     .hero-subtitle {
-        font-size: 1.5rem;
-        margin-bottom: 30px;
-        color: rgba(255, 255, 255, 0.9);
-    }
-    
-    .feature-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 30px;
-        margin-bottom: 50px;
+        font-size: 1.5rem !important;
+        margin-bottom: 1rem !important;
     }
     
     .feature-card {
         background: white;
         border-radius: 10px;
-        padding: 25px;
-        width: 300px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
         text-align: center;
     }
     
     .feature-card:hover {
         transform: translateY(-10px);
+        transition: transform 0.3s ease;
         box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
     }
     
     .feature-icon {
-        font-size: 40px;
-        margin-bottom: 20px;
-        color: #4285F4;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-title, .feature-text {
+        color: #333 !important;
     }
     
     .feature-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #333;
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
     }
     
-    .feature-text {
-        font-size: 1rem;
-        color: #555;
-        line-height: 1.6;
-    }
-    
-    .cta-container {
+    .stat-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        border-radius: 10px;
+        padding: 1rem;
         text-align: center;
-        margin: 40px 0;
+        margin-bottom: 1rem;
     }
     
-    .cta-button {
-        display: inline-block;
-        padding: 15px 30px;
-        background-color: #4285F4;
-        color: white;
-        font-size: 1.2rem;
-        font-weight: 600;
-        border-radius: 50px;
-        text-decoration: none;
-        margin: 10px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        cursor: pointer;
-        border: none;
-    }
-    
-    .cta-button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-    }
-    
-    .cta-button.secondary {
-        background-color: transparent;
-        border: 2px solid white;
-    }
-    
-    .testimonial-section {
-        padding: 40px 0;
-    }
-    
-    .testimonial-heading {
-        text-align: center;
-        font-size: 2rem;
-        font-weight: 600;
-        margin-bottom: 30px;
-        color: white;
+    .stat-number {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 0.5rem !important;
     }
     
     .testimonial-card {
         background: white;
         border-radius: 10px;
-        padding: 30px;
-        margin: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     }
     
     .testimonial-text {
         font-style: italic;
-        font-size: 1.1rem;
-        color: #333;
-        margin-bottom: 20px;
+        color: #333 !important;
     }
     
     .testimonial-author {
         font-weight: 600;
-        color: #4285F4;
+        color: #4285F4 !important;
     }
     
-    .animated {
-        opacity: 0;
-        animation: fadeInUp 1s forwards;
+    .stButton > button {
+        width: 100%;
+        padding: 0.75rem 1.5rem !important;
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        border-radius: 50px !important;
+        transition: transform 0.3s ease, box-shadow 0.3s ease !important;
     }
     
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .stButton > button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
     }
     
-    .delay-1 {
-        animation-delay: 0.3s;
+    .primary-btn > button {
+        background-color: #4285F4 !important;
+        color: white !important;
+        border: none !important;
     }
     
-    .delay-2 {
-        animation-delay: 0.6s;
-    }
-    
-    .delay-3 {
-        animation-delay: 0.9s;
-    }
-    
-    .stats-container {
-        display: flex;
-        justify-content: center;
-        text-align: center;
-        margin: 50px 0;
-    }
-    
-    .stat-item {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(5px);
-        border-radius: 10px;
-        padding: 20px;
-        margin: 0 15px;
-        width: 200px;
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: white;
-        margin-bottom: 10px;
-    }
-    
-    .stat-label {
-        font-size: 1rem;
-        color: rgba(255, 255, 255, 0.9);
+    .secondary-btn > button {
+        background-color: transparent !important;
+        color: white !important;
+        border: 2px solid white !important;
     }
     
     .footer {
         text-align: center;
-        padding: 30px 0;
+        padding: 1rem;
         color: rgba(255, 255, 255, 0.7);
         font-size: 0.9rem;
+        margin-top: 2rem;
     }
-    
-    /* Pour masquer le header Streamlit et les autres éléments */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
     
-    # Contenu de la page
-    st.markdown("""
-    <div class="main-container">
-        <div class="hero-section animated">
-            <h1 class="hero-title">Créez Votre CV Professionnel avec l'IA</h1>
-            <p class="hero-subtitle">Boostez votre visibilité en ligne avec un portfolio 100% optimisé par l'intelligence artificielle</p>
-        </div>
-        
-        <div class="feature-container">
-            <div class="feature-card animated delay-1">
-                <div class="feature-icon">🚀</div>
-                <h3 class="feature-title">Création Instantanée</h3>
-                <p class="feature-text">Téléchargez votre ancien CV ou commencez de zéro. Notre IA analyse et structure votre profil en quelques secondes.</p>
-            </div>
-            
-            <div class="feature-card animated delay-2">
-                <div class="feature-icon">✨</div>
-                <h3 class="feature-title">Design Professionnel</h3>
-                <p class="feature-text">Des templates modernes et adaptés à votre secteur d'activité pour vous démarquer auprès des recruteurs.</p>
-            </div>
-            
-            <div class="feature-card animated delay-3">
-                <div class="feature-icon">📊</div>
-                <h3 class="feature-title">Optimisation ATS</h3>
-                <p class="feature-text">Votre CV est optimisé pour les systèmes de suivi des candidatures utilisés par plus de 90% des entreprises.</p>
-            </div>
-        </div>
-        
-        <div class="stats-container animated delay-2">
-            <div class="stat-item">
-                <div class="stat-number">85%</div>
-                <div class="stat-label">Taux de succès en entretien</div>
-            </div>
-            
-            <div class="stat-item">
-                <div class="stat-number">3X</div>
-                <div class="stat-label">Plus de réponses positives</div>
-            </div>
-            
-            <div class="stat-item">
-                <div class="stat-number">24h</div>
-                <div class="stat-label">CV prêt en moins de</div>
-            </div>
-        </div>
-        
-        <div class="cta-container animated delay-3">
-            <button class="cta-button" id="register-button">Créer Mon CV Gratuitement</button>
-            <button class="cta-button secondary" id="login-button">Me Connecter</button>
-        </div>
-        
-        <div class="testimonial-section">
-            <h2 class="testimonial-heading animated">Ils ont transformé leur carrière</h2>
-            
-            <div style="display: flex; overflow-x: auto; padding: 10px 0;">
-                <div class="testimonial-card animated delay-1">
-                    <p class="testimonial-text">"Grâce à CV Manager, j'ai décroché un entretien chez Google après 3 mois de recherche infructueuse."</p>
-                    <p class="testimonial-author">— Marie L., Développeuse Full Stack</p>
-                </div>
-                
-                <div class="testimonial-card animated delay-2">
-                    <p class="testimonial-text">"L'optimisation par IA a parfaitement mis en valeur mon parcours atypique. Les recruteurs me contactent désormais directement."</p>
-                    <p class="testimonial-author">— Thomas B., Consultant en Transition Numérique</p>
-                </div>
-                
-                <div class="testimonial-card animated delay-3">
-                    <p class="testimonial-text">"Un outil indispensable pour les jeunes diplômés comme moi qui n'ont pas beaucoup d'expérience à mettre en avant."</p>
-                    <p class="testimonial-author">— Camille D., Ingénieure débutante</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            © 2024 CV Manager | Propulsé par l'IA | Tous droits réservés
-        </div>
-    </div>
+    # Hero Section
+    st.markdown('<div class="hero-section">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">Créez Votre CV Professionnel avec l\'IA</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Boostez votre visibilité en ligne avec un portfolio 100% optimisé par l\'intelligence artificielle</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    <script>
-        // Animation des statistiques (compteur)
-        document.addEventListener('DOMContentLoaded', function() {
-            const statNumbers = document.querySelectorAll('.stat-number');
-            statNumbers.forEach(elem => {
-                const finalValue = elem.innerText;
-                elem.innerText = '0';
-                setTimeout(() => {
-                    animateValue(elem, 0, finalValue, 1500);
-                }, 1200);
-            });
-        });
-        
-        function animateValue(obj, start, end, duration) {
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = end.includes('%') ? 
-                    Math.floor(progress * parseInt(end)) + '%' :
-                    end.includes('X') ?
-                    Math.floor(progress * parseInt(end)) + 'X' :
-                    end;
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                }
-            };
-            window.requestAnimationFrame(step);
-        }
-        
-        // Navigation buttons
-        document.getElementById('register-button').addEventListener('click', function() {
-            window.parent.postMessage({type: 'streamlit:setComponentValue', value: 'register'}, '*');
-        });
-        
-        document.getElementById('login-button').addEventListener('click', function() {
-            window.parent.postMessage({type: 'streamlit:setComponentValue', value: 'login'}, '*');
-        });
-    </script>
-    """, unsafe_allow_html=True)
+    # Features Section
+    st.subheader("Nos Solutions Innovantes")
     
-    # Gestion des clics sur les boutons (puisque le JavaScript ne peut pas directement changer la page)
-    component_value = st.session_state.get('component_value', None)
-    if component_value == 'register':
-        st.session_state.page = PAGE_REGISTER
-        st.rerun()
-    elif component_value == 'login':
-        st.session_state.page = PAGE_LOGIN
-        st.rerun()
+    feature_cols = st.columns(3)
     
-    # Actions alternatives pour les boutons (au cas où le JS ne fonctionne pas)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Créer mon CV", key="register_alt_btn"):
+    with feature_cols[0]:
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3 class="feature-title">Création Instantanée</h3>
+            <p class="feature-text">Téléchargez votre ancien CV ou commencez de zéro. Notre IA analyse et structure votre profil en quelques secondes.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with feature_cols[1]:
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-icon">✨</div>
+            <h3 class="feature-title">Design Professionnel</h3>
+            <p class="feature-text">Des templates modernes et adaptés à votre secteur d'activité pour vous démarquer auprès des recruteurs.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with feature_cols[2]:
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title">Optimisation ATS</h3>
+            <p class="feature-text">Votre CV est optimisé pour les systèmes de suivi des candidatures utilisés par plus de 90% des entreprises.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Stats Section
+    st.subheader("Résultats Prouvés")
+    
+    stat_cols = st.columns(3)
+    
+    with stat_cols[0]:
+        st.markdown("""
+        <div class="stat-container">
+            <p class="stat-number">85%</p>
+            <p>Taux de succès en entretien</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with stat_cols[1]:
+        st.markdown("""
+        <div class="stat-container">
+            <p class="stat-number">3X</p>
+            <p>Plus de réponses positives</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with stat_cols[2]:
+        st.markdown("""
+        <div class="stat-container">
+            <p class="stat-number">24h</p>
+            <p>CV prêt en moins de</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Call to Action buttons
+    st.markdown("<br>", unsafe_allow_html=True)
+    cta_cols = st.columns(2)
+    
+    with cta_cols[0]:
+        st.markdown('<div class="primary-btn">', unsafe_allow_html=True)
+        if st.button("Créer Mon CV Gratuitement"):
             st.session_state.page = PAGE_REGISTER
             st.rerun()
-    with col2:
-        if st.button("Me connecter", key="login_alt_btn"):
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with cta_cols[1]:
+        st.markdown('<div class="secondary-btn">', unsafe_allow_html=True)
+        if st.button("Me Connecter"):
             st.session_state.page = PAGE_LOGIN
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Testimonials
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("Ils ont transformé leur carrière")
+    
+    testimonial_cols = st.columns(3)
+    
+    with testimonial_cols[0]:
+        st.markdown("""
+        <div class="testimonial-card">
+            <p class="testimonial-text">"Grâce à CV Manager, j'ai décroché un entretien chez Google après 3 mois de recherche infructueuse."</p>
+            <p class="testimonial-author">— Marie L., Développeuse Full Stack</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with testimonial_cols[1]:
+        st.markdown("""
+        <div class="testimonial-card">
+            <p class="testimonial-text">"L'optimisation par IA a parfaitement mis en valeur mon parcours atypique. Les recruteurs me contactent désormais directement."</p>
+            <p class="testimonial-author">— Thomas B., Consultant en Transition Numérique</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with testimonial_cols[2]:
+        st.markdown("""
+        <div class="testimonial-card">
+            <p class="testimonial-text">"Un outil indispensable pour les jeunes diplômés comme moi qui n'ont pas beaucoup d'expérience à mettre en avant."</p>
+            <p class="testimonial-author">— Camille D., Ingénieure débutante</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown("""
+    <div class="footer">
+        © 2024 CV Manager | Propulsé par l'IA | Tous droits réservés
+    </div>
+    """, unsafe_allow_html=True)
 
 # Mise à jour de la fonction principale pour inclure la page d'accueil
 def main():
