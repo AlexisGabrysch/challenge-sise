@@ -844,10 +844,10 @@ def main():
 
     # Sidebar avec le nom de l'app
 
-    # image_path = os.path.join(os.path.dirname(__file__), "assets/logo2.png")
+    image_path = os.path.join(os.path.dirname(__file__), "assets/logo2.png")
     # print(image_path)
-    # st.sidebar.image(image_path, use_column_width=True)
-   #st.sidebar.image("assets/logo2.png", use_column_width=True)
+    st.sidebar.image(image_path, use_column_width=True)
+    # st.sidebar.image("assets/logo2.png", use_column_width=True)
     st.sidebar.title("CV Manager")
     
     if st.session_state.user:
