@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#1E88E5"  # Bleu
+backgroundColor = "#E3F2FD"  # Bleu clair
+secondaryBackgroundColor = "#BBDEFB"  # Bleu plus foncé
+textColor = "#0D47A1"  # Bleu foncé
+font = "sans serif"

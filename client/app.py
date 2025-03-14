@@ -4,6 +4,39 @@ import os
 import requests
 import json
 from typing import Optional, Dict, Any
+import base64
+
+# Configure the page
+st.set_page_config(
+    page_title="CV Manager",
+    page_icon="./assets/logo.png",
+    layout="centered",
+    initial_sidebar_state="auto",
+)
+
+# Inject custom CSS
+st.markdown(
+    """
+    <style>
+    .sidebar .sidebar-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .sidebar .sidebar-content img {
+        width: 80%;
+        max-width: 150px;
+        margin-bottom: 10px;
+    }
+    .sidebar .sidebar-content h1 {
+        text-align: center;
+        width: 100%;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Configuration URLs
 SERVER_URL = os.getenv("SERVER_URL", "https://challenge-sise-production-0bc4.up.railway.app")
@@ -264,7 +297,7 @@ def show_user_profile():
         font-size: 1.3rem;
         font-weight: 600;
         margin-bottom: 1rem;
-        color: #333;
+        color: #0D47A1;
         border-bottom: 2px solid #f0f0f0;
         padding-bottom: 0.5rem;
     }
@@ -316,8 +349,8 @@ def show_user_profile():
         margin-bottom: 1rem;
     }
     .welcome-card {
-        background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
-        color: white;
+        background: linear-gradient(135deg, #E3F2FD, #BBDEFB,#1E88E5);
+        color: #0D47A1;
         border-radius: 8px;
         padding: 2rem;
         margin-bottom: 2rem;
@@ -748,8 +781,66 @@ def show_edit_cv():
             st.session_state.page = PAGE_VIEW_CV
             st.rerun()
 
+
+
 def main():
+
+    st.markdown(
+    """
+    <style>
+        /* Centrer l'image */
+        
+        [data-testid="stSidebar"] img {
+            
+            width: 50%; 
+            height: auto; 
+            transition: transform 0.3s ease-in-out; /* Animation fluide */
+        }
+        
+        /* Effet de zoom au survol */
+        [data-testid="stSidebar"] img:hover {
+            transform: scale(1.1); /* Agrandit légèrement */
+        }
+        
+        
+        /* Centrer le titre */
+        [data-testid="stSidebar"] h1 {
+            margin-top: -100px;
+            text-align: center;
+        }
+
+       /* Centrer et styliser le texte "Logged in as:" */
+        [data-testid="stSidebar"] p {
+            text-align: center;
+            font-size: 18px; 
+            font-weight: bold;
+            
+        }
+
+      
+
+        /* Centrer le bouton */
+        [data-testid="stSidebar"] button {
+            display: block;
+            margin: 0 auto;
+            text-align: center;
+            background-color: #0D47A1 !important; 
+            color: white !important; /* Couleur du texte */
+           
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        [data-testid="stSidebar"] button:hover {
+            background-color: #C70039 !important; /* Rouge foncé au survol */
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+    )
+
     # Sidebar avec le nom de l'app
+    st.sidebar.image("assets/logo2.png", use_column_width=True)
     st.sidebar.title("CV Manager")
     
     if st.session_state.user:
