@@ -6,8 +6,17 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copier tout le dossier assets
+COPY assets /app/assets/
+COPY .streamlit/ /app/.streamlit/
+
 # Copier le code de l'application
 COPY app.py .
+
+
+
+
+
 
 # Variable d'environnement pour Railway
 # Suppression des slashes finaux pour éviter les doubles slashes dans les URLs
